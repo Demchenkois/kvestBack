@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ команды — Кабинет психолога</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Georgia', serif; 
+            min-height: 100vh; 
+            overflow-x: hidden;
+        }
+        .psychologist-office {
+            min-height: 100vh;
+            background: url('img/room/3/fon.jpg') center/cover no-repeat fixed;
+            background-attachment: fixed;
+            position: relative;
+            padding: 40px;
+        }
+        .office-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+        }
+        .office-content {
+            position: relative; z-index: 2; max-width: 1200px; margin: 0 auto;
+        }
+        h1 {
+            text-align: center; color: white; font-size: 42px; margin-bottom: 40px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+        }
+        .current-stage {
+            backdrop-filter: blur(5px);
+            border-radius: 30px;
+            padding: 50px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.3);
+            margin-bottom: 30px;
+            width: 1100px;
+            justify-items: center;
+            justify-self: center;
+        }
+        .desk-folders {
+            display: flex; justify-content: center; gap: 30px; margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        .folder {
+            width: 140px; height: 180px; border-radius: 15px; position: relative; cursor: pointer;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3); transition: all 0.4s;
+        }
+        .folder.red { background: linear-gradient(145deg, #FF6B6B, #FF8E8E, #FF5252); }
+        .folder.yellow { background: linear-gradient(145deg, #FFD93D, #FFE66D, #FFCA28); }
+        .folder.blue { background: linear-gradient(145deg, #4DABF7, #74C0FC, #4299E1); }
+        .folder.green { background: linear-gradient(145deg, #51CF66, #7EEB92, #38A169); }
+        .folder:hover { transform: scale(1.08) rotate(3deg) translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+        .folder-label {
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            font-size: 13px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            text-align: center; width: 90%;
+        }
+        .stages-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%);
+            backdrop-filter: blur(20px); padding: 25px 0;
+            z-index: 100;
+        }
+        .stages-container {
+            max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; gap: 25px;
+            flex-wrap: wrap;
+        }
+        .stage-btn {
+            padding: 20px 40px; border-radius: 50px; font-size: 17px; font-weight: bold;
+            border: none; cursor: pointer; transition: all 0.4s; position: relative;
+            min-width: 170px; text-align: center;
+        }
+        .stage-btn:not(.completed):not(.current):disabled {
+            opacity: 0.3; cursor: not-allowed; background: #666;
+        }
+        .stage-btn.current {
+            background: linear-gradient(145deg, #667eea, #764ba2); color: white;
+            box-shadow: 0 12px 35px rgba(102,126,234,0.6);
+        }
+        .stage-btn.completed {
+            background: linear-gradient(145deg, #51CF66, #7EEB92); color: white;
+            box-shadow: 0 12px 35px rgba(81,207,102,0.6);
+        }
+        .stage-lock { font-size: 22px; margin-right: 10px; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-content {
+            background: linear-gradient(145deg, rgba(255,255,255,0.98), rgba(248,250,252,0.95));
+            border-radius: 30px; padding: 50px; max-width: 800px; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3);
+            position: relative;
+        }
+        .close {
+            position: absolute; top: 25px; right: 30px; font-size: 32px; cursor: pointer;
+            color: #999; transition: 0.3s;
+        }
+        .close:hover { color: #FF6B6B; transform: rotate(90deg); }
+        .dialogue {
+            background: linear-gradient(145deg, #FFF8E1, #FFECB3);
+            padding: 35px; border-radius: 25px; margin: 25px 0; font-style: italic; font-size: 18px;
+            position: relative; border-left: 6px solid #FFD93D; line-height: 1.6;
+        }
+        .question {
+            margin: 30px 0; font-size: 20px; line-height: 1.6; color: #2D3748;
+            background: rgba(255,255,255,0.8); padding: 30px; border-radius: 20px; border-left: 5px solid #667eea;
+        }
+        .options { display: flex; flex-direction: column; gap: 15px; margin: 30px 0; }
+        .option {
+            padding: 18px 25px; border-radius: 18px; background: rgba(255,255,255,0.85);
+            cursor: pointer; transition: all 0.3s; border: 3px solid transparent;
+            font-size: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .option:hover:not(.selected):not(.correct):not(.incorrect) {
+            background: rgba(102,126,234,0.1); border-color: #667eea; transform: translateX(8px);
+        }
+        .option.selected {
+            background: rgba(102,126,234,0.2) !important; border-color: #667eea;
+            transform: translateX(8px); box-shadow: 0 10px 25px rgba(102,126,234,0.3);
+        }
+        .option.correct {
+            background: linear-gradient(145deg, #51CF66, #7EEB92) !important;
+            border-color: #38A169; color: white; transform: scale(1.02);
+        }
+        .option.incorrect {
+            background: linear-gradient(145deg, #FF6B6B, #FF8E8E) !important;
+            border-color: #E53E3E; color: white;
+        }
+        .modal-buttons {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 40px;
+            gap: 20px;
+        }
+        .btn {
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 18px 35px; border-radius: 25px;
+            font-size: 16px; cursor: pointer;
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(102,126,234,0.5); }
+        .submit-btn {
+            background: linear-gradient(145deg, #51CF66, #7EEB92) !important;
+        }
+        .hint {
+            color: #667eea; font-size: 16px; cursor: pointer;
+            padding: 15px 25px; border-radius: 25px; border: 2px solid rgba(102,126,234,0.3);
+            background: rgba(102,126,234,0.08);
+        }
+        .hint:hover { background: rgba(102,126,234,0.15); transform: scale(1.05); border-color: #667eea; }
+        .selected-count {
+            background: rgba(255,217,61,0.2); padding: 10px 20px; border-radius: 20px;
+            font-weight: bold; color: #D69E2E; margin-bottom: 20px;
+        }
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #ddd;
+            margin: 10px 0; font-family: inherit; font-size: 14px;
+        }
+        textarea:focus, input:focus { border-color: #667eea; outline: none; }
+        .form-group { margin: 20px 0; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .info-btn {
+            background: #6c5ce7; color: white; font-size: 12px; padding: 6px 12px; margin: 2px;
+            border: none; border-radius: 20px; cursor: pointer; transition: all 0.2s;
+        }
+        .info-btn:hover { background: #5a4ac7; transform: translateY(-1px); }
+        .info-panel {
+            background: rgba(255,255,255,0.9); border-radius: 12px; padding: 15px;
+            margin: 10px 0; display: none; border-left: 4px solid #6c5ce7;
+            font-size: 14px; color: #2d3748;
+        }
+        .info-panel.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .score-detail {
+            background: rgba(79,172,254,0.1); padding: 15px; border-radius: 12px;
+            margin: 10px 0; border-left: 5px solid #4facfe;
+        }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .final-modal-content {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 25px; padding: 40px; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4); position: relative;
+            max-width: 700px; width: 90%; animation: modalSlideIn 0.4s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .search-sign {
+            position: fixed; bottom: 20px; right: 20px;
+            background: gold; color: black; padding: 8px 15px;
+            border-radius: 40px; font-weight: bold; font-size: 18px;
+            z-index: 9999; box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            cursor: pointer; font-family: monospace;
+        }
+        .search-sign:hover { background: orange; transform: scale(1.05); }
+        @media (max-width: 768px) {
+            .desk-folders { flex-direction: column; align-items: center; gap: 25px; }
+            .stages-container { gap: 15px; }
+            .stage-btn { padding: 16px 30px; font-size: 15px; min-width: 140px; }
+            h1 { font-size: 32px; }
+            .modal-buttons { flex-direction: column; align-items: stretch; }
+            .modal-content { padding: 30px 25px; margin: 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="psychologist-office">
+    <div class="office-overlay"></div>
+    <div class="office-content">
+        <h1>🧠 Анализ команды</h1>
+        <!-- ЗОНА 1 -->
+        <div id="zone1" class="current-stage">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 1: Диагностика причин</h2>
+            <div class="desk-folders">
+                <div class="folder red" onclick="openZone(1)"><div class="folder-label">Группа 25 поваров<br>Конфликты и доверие</div></div>
+            </div>
+        </div>
+        <!-- ЗОНА 2 -->
+        <div id="zone2" class="current-stage" style="display:none;">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 2: Кризисное вмешательство</h2>
+            <div class="desk-folders">
+                <div class="folder yellow" onclick="openZone(2)"><div class="folder-label">Конфликт на кухне<br>Срочное решение</div></div>
+            </div>
+        </div>
+        <!-- ЗОНА 3 -->
+        <div id="zone3" class="current-stage" style="display:none;">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 3: Тимбилдинг</h2>
+            <div class="desk-folders">
+                <div class="folder blue" onclick="openZone(3)"><div class="folder-label">Командообразование<br>Бюджет 15к</div></div>
+            </div>
+        </div>
+        <!-- ЗОНА 4 -->
+        <div id="zone4" class="current-stage" style="display:none;">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 4: Лидерская система</h2>
+            <div class="desk-folders">
+                <div class="folder green" onclick="openZone(4)"><div class="folder-label">Выявление лидеров<br>Менторство</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="stages-panel">
+    <div class="stages-container">
+        <button class="stage-btn current" onclick="goToZone(1)">Зона 1</button>
+        <button class="stage-btn" disabled onclick="goToZone(2)"><span class="stage-lock">🔒</span>Зона 2</button>
+        <button class="stage-btn" disabled onclick="goToZone(3)"><span class="stage-lock">🔒</span>Зона 3</button>
+        <button class="stage-btn" disabled onclick="goToZone(4)"><span class="stage-lock">🔒</span>Зона 4</button>
+    </div>
+</div>
+
+<!-- ========== МОДАЛЬНЫЕ ОКНА С ИНФОПАНЕЛЯМИ ========== -->
+
+<!-- ЗОНА 1 -->
+<div id="modal1" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(1)">&times;</span>
+        <div class="dialogue">Группа 25 поваров: опрос показал доверие 3.2/5, разные цели, плохая коммуникация. Ошибки в блюдах, опоздания, срывы сроков.</div>
+        <div id="q1-1" class="question">Вопрос 1: Выберите ГЛАВНЫЕ причины конфликтов (3 правильных)</div>
+        <div id="options1-1" class="options">
+            <div class="option" data-correct="true">Низкое доверие в команде</div>
+            <div class="option" data-correct="true">Разные цели участников</div>
+            <div class="option" data-correct="true">Проблемы коммуникации</div>
+            <div class="option" data-correct="false">Недостаток оборудования</div>
+            <div class="option" data-correct="false">Переработки сотрудников</div>
+            <div class="option" data-correct="false">Смена меню</div>
+        </div>
+        <div id="selected-count1-1" class="selected-count" style="display:none;"></div>
+        <!-- Инфопанели -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone1-doc1')">📊 Результаты опроса</button>
+            <button class="info-btn" onclick="toggleInfo('zone1-conflicts')">⚠️ Типы конфликтов</button>
+            <button class="info-btn" onclick="toggleInfo('zone1-factors')">📋 Ключевые факторы</button>
+        </div>
+        <div id="zone1-doc1" class="info-panel">Опрос 25 поваров: доверие 3.2/5, цели 2.8/5, коммуникация 3.5/5, конфликты 4.1/5.</div>
+        <div id="zone1-conflicts" class="info-panel">Типы конфликтов: межличностные (45%), организационные (35%), ценностные (20%).</div>
+        <div id="zone1-factors" class="info-panel">Ключевые факторы: доверие, согласованность целей, эффективная коммуникация (по опросу).</div>
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitZone1Part1()">Отправить ответ</button>
+            <div class="hint" onclick="showHint(1)">Подсказка</div>
+        </div>
+        <div id="q2-1" style="display:none;">
+            <div class="question">Вопрос 2: Опишите 3 ключевые проблемы (каждая 40+ симв.) и дайте обоснование (150+ симв.)</div>
+            <div class="form-group">
+                <textarea id="zone1Problems" placeholder="1. ...\n2. ...\n3. ..." rows="4"></textarea>
+                <textarea id="zone1Justify" placeholder="Обоснование выбора (не менее 150 символов) ..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn submit-btn" onclick="submitZone1Part2()">Завершить зону</button>
+                <div class="hint" onclick="showHint(1)">Подсказка по проблемам</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ЗОНА 2 -->
+<div id="modal2" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(2)">&times;</span>
+        <div class="dialogue">Конфликты нарастают: повар разлил соус на шефа, крики на кухне, брак блюд 15%. Срочно!</div>
+        <div id="q1-2" class="question">Вопрос 1: Выберите оптимальные стратегии вмешательства (можно выбрать несколько)</div>
+        <div id="options1-2" class="options">
+            <div class="option" data-correct="true">Компромисс (поиск взаимных уступок)</div>
+            <div class="option" data-correct="true">Сотрудничество (win-win решение)</div>
+            <div class="option" data-correct="false">Конфронтация</div>
+            <div class="option" data-correct="false">Сглаживание</div>
+            <div class="option" data-correct="false">Избегание</div>
+            <div class="option" data-correct="false">Навязывание</div>
+        </div>
+        <div id="selected-count1-2" class="selected-count" style="display:none;"></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone2-strategies')">📚 Стратегии Томаса</button>
+            <button class="info-btn" onclick="toggleInfo('zone2-time-info')">⏱️ Время реакции</button>
+            <button class="info-btn" onclick="toggleInfo('zone2-cases')">📖 Кейсы</button>
+        </div>
+        <div id="zone2-strategies" class="info-panel">Модель Томаса-Килманна: сотрудничество/компромисс оптимальны для кухни.</div>
+        <div id="zone2-time-info" class="info-panel">Оптимальное время вмешательства: 45 мин (до эскалации).</div>
+        <div id="zone2-cases" class="info-panel">Кейс: компромисс сократил конфликты на 67%.</div>
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitZone2Part1()">Отправить ответ</button>
+            <div class="hint" onclick="showHint(2)">Подсказка</div>
+        </div>
+        <div id="q2-2" style="display:none;">
+            <div class="question">Вопрос 2: Укажите время вмешательства (мин.) и подробный план разрешения (200+ симв.)</div>
+            <div class="form-group">
+                <label>Время (мин): <input type="number" id="zone2Time" min="0" max="120" style="width:150px;"></label>
+                <label>План разрешения:</label>
+                <textarea id="zone2Plan" rows="5" placeholder="1. ... 2. ... 3. ... (минимум 200 символов)"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn submit-btn" onclick="submitZone2Part2()">Завершить зону</button>
+                <div class="hint" onclick="showHint(2)">Время ~45 мин, план структурированный</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ЗОНА 3 -->
+<div id="modal3" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(3)">&times;</span>
+        <div class="dialogue">25 поваров нуждаются в тимбилдинге. Бюджет 15 000 руб. Цель: доверие, коммуникация.</div>
+        <div id="q1-3" class="question">Вопрос 1: Выберите корректные элементы программы (3 правильных)</div>
+        <div id="options1-3" class="options">
+            <div class="option" data-correct="true">Игра "Доверительный ход"</div>
+            <div class="option" data-correct="true">Кулинарный квест</div>
+            <div class="option" data-correct="true">Timeline: 14:00-17:00</div>
+            <div class="option" data-correct="false">Лекция о гигиене</div>
+            <div class="option" data-correct="false">Корпоратив в баре</div>
+            <div class="option" data-correct="false">Просмотр видео</div>
+        </div>
+        <div id="selected-count1-3" class="selected-count" style="display:none;"></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone3-format-info')">🎯 Форматы</button>
+            <button class="info-btn" onclick="toggleInfo('zone3-results')">📈 Ожидаемые KPI</button>
+            <button class="info-btn" onclick="toggleInfo('zone3-budget')">💰 Бюджет 15к</button>
+        </div>
+        <div id="zone3-format-info" class="info-panel">Обязательные элементы: цель, 2+ активности, временной план.</div>
+        <div id="zone3-results" class="info-panel">KPI: доверие +30%, коммуникация +25%, конфликты -40%.</div>
+        <div id="zone3-budget" class="info-panel">15 000 руб: аренда зала 5 000, активности 7 000, кофе-брейк 3 000.</div>
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitZone3Part1()">Отправить ответ</button>
+            <div class="hint" onclick="showHint(3)">Подсказка</div>
+        </div>
+        <div id="q2-3" style="display:none;">
+            <div class="question">Вопрос 2: Формат события, план (минимум 3 блока) и оценка эффективности (1-5)</div>
+            <div class="form-group">
+                <input type="text" id="zone3Format" placeholder="Формат (например: тимбилдинг, командная игра)">
+                <textarea id="zone3Plan" rows="4" placeholder="План мероприятия (3+ этапа)"></textarea>
+                <label>Эффективность (1-5): <input type="number" id="zone3Eff" min="1" max="5" style="width:100px;"></label>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn submit-btn" onclick="submitZone3Part2()">Завершить зону</button>
+                <div class="hint" onclick="showHint(3)">Формат должен содержать «тимбилдинг» или «команда», эффективность ≥4</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ЗОНА 4 -->
+<div id="modal4" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(4)">&times;</span>
+        <div class="dialogue">Выявить лидеров, создать менторство. Критерии: инициатива, результат, поддержка коллег.</div>
+        <div id="q1-4" class="question">Вопрос 1: Выберите элементы системы поддержки лидеров (любое количество)</div>
+        <div id="options1-4" class="options">
+            <div class="option" data-correct="true">Идентификация лидеров (опрос)</div>
+            <div class="option" data-correct="true">Тренинги лидерства</div>
+            <div class="option" data-correct="true">Коучинг 1:1</div>
+            <div class="option" data-correct="true">Оценка эффективности</div>
+            <div class="option" data-correct="false">Материальные бонусы</div>
+            <div class="option" data-correct="true">Нетворкинг с шефами</div>
+            <div class="option" data-correct="true">Лидерские проекты</div>
+            <div class="option" data-correct="true">Обратная связь</div>
+            <div class="option" data-correct="true">Карьерный трек</div>
+        </div>
+        <div id="selected-count1-4" class="selected-count" style="display:none;"></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone4-leaders-info')">🏅 Критерии лидеров</button>
+            <button class="info-btn" onclick="toggleInfo('zone4-system-info')">⚙️ Элементы системы</button>
+            <button class="info-btn" onclick="toggleInfo('zone4-results-info')">📊 KPI системы</button>
+        </div>
+        <div id="zone4-leaders-info" class="info-panel">Лидеры: инициатива, результат, поддержка (топ-3 по опросу).</div>
+        <div id="zone4-system-info" class="info-panel">Обязательно: идентификация, обучение, поддержка, оценка.</div>
+        <div id="zone4-results-info" class="info-panel">KPI: лидеров +20%, конфликты -30%, удовлетворённость +25%.</div>
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitZone4Part1()">Отправить ответ</button>
+            <div class="hint" onclick="showHint(4)">Подсказка</div>
+        </div>
+        <div id="q2-4" style="display:none;">
+            <div class="question">Вопрос 2: Укажите лидеров (не менее 2), описание системы поддержки (100+ симв.) и механизмы (100+ симв.)</div>
+            <div class="form-group">
+                <input type="text" id="zone4Leaders" placeholder="Иванов (инициатива), Петров (результаты)">
+                <textarea id="zone4System" rows="3" placeholder="Система менторства, встречи ... (100+ симв.)"></textarea>
+                <textarea id="zone4Mechanisms" rows="3" placeholder="Механизмы: бонусы, проекты, обратная связь ... (100+ симв.)"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn submit-btn" onclick="submitZone4Part2()">Завершить зону</button>
+                <div class="hint" onclick="showHint(4)">Нужно минимум 2 имени, объём текста 100+ символов</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО РЕЗУЛЬТАТОВ (СЕРТИФИКАТ) -->
+<div id="final-results-modal" class="modal-overlay">
+    <div class="final-modal-content">
+        <button class="modal-close" onclick="closeFinalModal()">×</button>
+        <h2 style="text-align:center; color:#333; margin-bottom:20px;">🎓 Сертификат о прохождении</h2>
+        <h3 style="text-align:center; color:#4facfe; margin-bottom:30px;">"Анализ команды"</h3>
+        <div id="final-score" style="text-align:center;"></div>
+        <div id="zone-results" style="margin:20px 0;"></div>
+        <div style="text-align:center; margin:30px 0;">
+            <button onclick="saveResults()" class="btn" style="background:#4facfe; margin:5px;">💾 Сохранить результаты</button>
+            <button onclick="clearProgressAndRestart()" class="btn" style="background:#ff6b6b; margin:5px;">🔄 Пройти заново</button>
+            <!-- НОВАЯ КНОПКА ЗАВЕРШЕНИЯ ЭТАПА (ЗАКРЫТИЕ ВКЛАДКИ) -->
+            <button id="finishStageBtn" class="btn" style="background:#28a745; margin:5px;">🏁 Завершить этап</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentZone = 1;
+    let zoneScores = {1:0, 2:0, 3:0, 4:0};
+    let tempScore = 0;
+    let zoneCompleted = {1:false, 2:false, 3:false, 4:false};
+    const zoneNames = ['zone1','zone2','zone3','zone4'];
+
+    function init() {
+        const saved = localStorage.getItem('teamZoneProgress');
+        if(saved) {
+            const data = JSON.parse(saved);
+            currentZone = data.currentZone || 1;
+            zoneScores = data.zoneScores || {1:0,2:0,3:0,4:0};
+            zoneCompleted = data.zoneCompleted || {1:false,2:false,3:false,4:false};
+        }
+        updateUI();
+    }
+
+    function updateUI() {
+        zoneNames.forEach((z, idx) => {
+            document.getElementById(z).style.display = (idx+1 === currentZone) ? 'block' : 'none';
+        });
+        const btns = document.querySelectorAll('.stage-btn');
+        btns.forEach((btn, i) => {
+            const zn = i+1;
+            btn.classList.remove('current','completed');
+            if(zn < currentZone) {
+                btn.classList.add('completed');
+                btn.disabled = false;
+                btn.innerHTML = `Зона ${zn} ✅`;
+            } else if(zn === currentZone) {
+                btn.classList.add('current');
+                btn.disabled = false;
+                btn.innerHTML = `Зона ${zn}`;
+            } else {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="stage-lock">🔒</span>Зона ${zn}`;
+            }
+        });
+        localStorage.setItem('teamZoneProgress', JSON.stringify({ currentZone, zoneScores, zoneCompleted }));
+    }
+
+    function goToZone(zn) {
+        if(zn <= currentZone) {
+            currentZone = zn;
+            updateUI();
+        } else alert(`Сначала завершите зону ${currentZone}`);
+    }
+
+    function openZone(zn) {
+        if(zn <= currentZone) {
+            tempScore = 0;
+            document.getElementById(`modal${zn}`).style.display = 'flex';
+            resetZoneModal(zn);
+        } else alert(`Сначала завершите зону ${currentZone}`);
+    }
+
+    function closeModal(zn) {
+        document.getElementById(`modal${zn}`).style.display = 'none';
+    }
+
+    function resetZoneModal(zn) {
+        document.getElementById(`q1-${zn}`).style.display = 'block';
+        document.getElementById(`options1-${zn}`).style.display = 'flex';
+        const btnsDiv = document.querySelector(`#modal${zn} .modal-buttons`);
+        if(btnsDiv) btnsDiv.style.display = 'flex';
+        document.getElementById(`q2-${zn}`).style.display = 'none';
+        document.querySelectorAll(`#options1-${zn} .option`).forEach(opt => opt.classList.remove('selected','correct','incorrect'));
+        const countSpan = document.getElementById(`selected-count1-${zn}`);
+        if(countSpan) countSpan.style.display = 'none';
+        // очистка полей
+        if(zn===1) {
+            document.getElementById('zone1Problems').value = '';
+            document.getElementById('zone1Justify').value = '';
+        } else if(zn===2) {
+            document.getElementById('zone2Time').value = '';
+            document.getElementById('zone2Plan').value = '';
+        } else if(zn===3) {
+            document.getElementById('zone3Format').value = '';
+            document.getElementById('zone3Plan').value = '';
+            document.getElementById('zone3Eff').value = '';
+        } else if(zn===4) {
+            document.getElementById('zone4Leaders').value = '';
+            document.getElementById('zone4System').value = '';
+            document.getElementById('zone4Mechanisms').value = '';
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        if(e.target.classList.contains('option')) {
+            e.target.classList.toggle('selected');
+            updateSelectedCount();
+        }
+    });
+
+    function updateSelectedCount() {
+        for(let zn=1; zn<=4; zn++) {
+            const modal = document.getElementById(`modal${zn}`);
+            if(modal && modal.style.display === 'flex') {
+                const selected = modal.querySelectorAll(`#options1-${zn} .option.selected`);
+                const countSpan = modal.querySelector(`#selected-count1-${zn}`);
+                if(countSpan) {
+                    countSpan.textContent = `Выбрано: ${selected.length}`;
+                    countSpan.style.display = selected.length ? 'block' : 'none';
+                }
+            }
+        }
+    }
+
+    function toggleInfo(id) {
+        const panel = document.getElementById(id);
+        if(panel) panel.classList.toggle('active');
+    }
+
+    // ЗОНА 1
+    function submitZone1Part1() {
+        const opts = document.querySelectorAll('#options1-1 .option');
+        let correctSelected = 0;
+        opts.forEach(opt => {
+            opt.style.pointerEvents = 'none';
+            if(opt.dataset.correct === 'true' && opt.classList.contains('selected')) {
+                correctSelected++;
+                opt.classList.add('correct');
+            } else if(opt.dataset.correct === 'false' && opt.classList.contains('selected')) {
+                opt.classList.add('incorrect');
+            } else if(opt.dataset.correct === 'true') opt.classList.add('correct');
+        });
+        let score = Math.min(correctSelected, 3);
+        tempScore += score;
+        const resultDiv = document.createElement('div');
+        resultDiv.innerHTML = `<strong>+${score} баллов за причины</strong> (всего в зоне: ${tempScore})`;
+        resultDiv.style.cssText = 'margin:15px 0; padding:10px; background:rgba(0,0,0,0.05); border-radius:10px;';
+        document.getElementById('options1-1').after(resultDiv);
+        setTimeout(() => {
+            document.getElementById('q1-1').style.display = 'none';
+            document.getElementById('options1-1').style.display = 'none';
+            document.querySelector('#modal1 .modal-buttons').style.display = 'none';
+            document.getElementById('q2-1').style.display = 'block';
+        }, 1500);
+    }
+
+    function submitZone1Part2() {
+        const lines = document.getElementById('zone1Problems').value.split('\n').filter(l => l.trim().length >= 40);
+        const problemsScore = lines.length >= 3 ? 3 : 0;
+        const justifyLen = document.getElementById('zone1Justify').value.length;
+        const justifyScore = justifyLen >= 150 ? 3 : 0;
+        const add = problemsScore + justifyScore;
+        tempScore += add;
+        zoneScores[1] = tempScore;
+        alert(`Зона 1 завершена! Баллы: ${zoneScores[1]}/9`);
+        completeZone(1);
+    }
+
+    // ЗОНА 2
+    function submitZone2Part1() {
+        const opts = document.querySelectorAll('#options1-2 .option');
+        let correctSelected = 0;
+        opts.forEach(opt => {
+            opt.style.pointerEvents = 'none';
+            if(opt.dataset.correct === 'true' && opt.classList.contains('selected')) {
+                correctSelected++;
+                opt.classList.add('correct');
+            } else if(opt.dataset.correct === 'false' && opt.classList.contains('selected')) {
+                opt.classList.add('incorrect');
+            } else if(opt.dataset.correct === 'true') opt.classList.add('correct');
+        });
+        let score = correctSelected === 2 ? 3 : (correctSelected === 1 ? 1 : 0);
+        tempScore += score;
+        const resDiv = document.createElement('div');
+        resDiv.innerHTML = `<strong>+${score} баллов за стратегии</strong> (всего: ${tempScore})`;
+        resDiv.style.cssText = 'margin:15px 0; padding:10px; background:rgba(0,0,0,0.05); border-radius:10px;';
+        document.getElementById('options1-2').after(resDiv);
+        setTimeout(() => {
+            document.getElementById('q1-2').style.display = 'none';
+            document.getElementById('options1-2').style.display = 'none';
+            document.querySelector('#modal2 .modal-buttons').style.display = 'none';
+            document.getElementById('q2-2').style.display = 'block';
+        }, 1500);
+    }
+
+    function submitZone2Part2() {
+        let time = parseInt(document.getElementById('zone2Time').value);
+        let timeScore = (!isNaN(time) && Math.abs(time-45) <= 15) ? 3 : 0;
+        const plan = document.getElementById('zone2Plan').value;
+        let planScore = plan.length >= 200 ? 3 : 0;
+        const add = timeScore + planScore;
+        tempScore += add;
+        zoneScores[2] = tempScore;
+        alert(`Зона 2 завершена! Баллы: ${zoneScores[2]}/9`);
+        completeZone(2);
+    }
+
+    // ЗОНА 3
+    function submitZone3Part1() {
+        const opts = document.querySelectorAll('#options1-3 .option');
+        let correctSelected = 0;
+        opts.forEach(opt => {
+            opt.style.pointerEvents = 'none';
+            if(opt.dataset.correct === 'true' && opt.classList.contains('selected')) {
+                correctSelected++;
+                opt.classList.add('correct');
+            } else if(opt.dataset.correct === 'false' && opt.classList.contains('selected')) {
+                opt.classList.add('incorrect');
+            } else if(opt.dataset.correct === 'true') opt.classList.add('correct');
+        });
+        let score = correctSelected === 3 ? 3 : (correctSelected === 2 ? 2 : (correctSelected===1?1:0));
+        tempScore += score;
+        const resDiv = document.createElement('div');
+        resDiv.innerHTML = `<strong>+${score} баллов за элементы</strong> (всего: ${tempScore})`;
+        resDiv.style.cssText = 'margin:15px 0; padding:10px; background:rgba(0,0,0,0.05); border-radius:10px;';
+        document.getElementById('options1-3').after(resDiv);
+        setTimeout(() => {
+            document.getElementById('q1-3').style.display = 'none';
+            document.getElementById('options1-3').style.display = 'none';
+            document.querySelector('#modal3 .modal-buttons').style.display = 'none';
+            document.getElementById('q2-3').style.display = 'block';
+        }, 1500);
+    }
+
+    function submitZone3Part2() {
+        let formatScore = 0;
+        const format = document.getElementById('zone3Format').value.toLowerCase();
+        if(format.includes('тимбилдинг') || format.includes('команда')) formatScore = 3;
+        const planParts = document.getElementById('zone3Plan').value.split(/[\n,;:]/).filter(p => p.trim().length > 5);
+        const eff = parseInt(document.getElementById('zone3Eff').value);
+        let planEffScore = (planParts.length >= 3 && eff >= 4) ? 3 : 0;
+        const add = formatScore + planEffScore;
+        tempScore += add;
+        zoneScores[3] = tempScore;
+        alert(`Зона 3 завершена! Баллы: ${zoneScores[3]}/9`);
+        completeZone(3);
+    }
+
+    // ЗОНА 4
+    function submitZone4Part1() {
+        const opts = document.querySelectorAll('#options1-4 .option');
+        let selectedCount = 0;
+        opts.forEach(opt => {
+            opt.style.pointerEvents = 'none';
+            if(opt.classList.contains('selected')) {
+                selectedCount++;
+                opt.classList.add('correct');
+            } else if(opt.dataset.correct === 'true') opt.classList.add('correct');
+        });
+        let score = Math.min(selectedCount, 4);
+        tempScore += score;
+        const resDiv = document.createElement('div');
+        resDiv.innerHTML = `<strong>+${score} баллов за выбранные элементы</strong> (всего: ${tempScore})`;
+        resDiv.style.cssText = 'margin:15px 0; padding:10px; background:rgba(0,0,0,0.05); border-radius:10px;';
+        document.getElementById('options1-4').after(resDiv);
+        setTimeout(() => {
+            document.getElementById('q1-4').style.display = 'none';
+            document.getElementById('options1-4').style.display = 'none';
+            document.querySelector('#modal4 .modal-buttons').style.display = 'none';
+            document.getElementById('q2-4').style.display = 'block';
+        }, 1500);
+    }
+
+    function submitZone4Part2() {
+        let leaders = document.getElementById('zone4Leaders').value.split(',').filter(l => l.trim().length > 0);
+        let leadersScore = leaders.length >= 2 ? 2 : 0;
+        let systemLen = document.getElementById('zone4System').value.length;
+        let mechanismsLen = document.getElementById('zone4Mechanisms').value.length;
+        let sysScore = (systemLen >= 100 ? 2 : 0);
+        let mechScore = (mechanismsLen >= 100 ? 1 : 0);
+        let add = leadersScore + sysScore + mechScore;
+        tempScore += add;
+        zoneScores[4] = tempScore;
+        alert(`Зона 4 завершена! Баллы: ${zoneScores[4]}/9`);
+        completeZone(4);
+    }
+
+    function completeZone(zoneNum) {
+        zoneCompleted[zoneNum] = true;
+        if(zoneNum === 4 && zoneCompleted[1] && zoneCompleted[2] && zoneCompleted[3] && zoneCompleted[4]) {
+            showFinalCertificate();
+        } else {
+            currentZone++;
+            updateUI();
+            closeModal(zoneNum);
+        }
+        localStorage.setItem('teamZoneProgress', JSON.stringify({ currentZone, zoneScores, zoneCompleted }));
+    }
+
+    function showFinalCertificate() {
+        const total = Object.values(zoneScores).reduce((a,b)=>a+b,0);
+        const percent = Math.round(total / 36 * 100);
+        const passed = total >= 24;
+        document.getElementById('final-score').innerHTML = `
+            <div style="font-size:3.2em;margin:25px 0;font-weight:700;color:${passed ? '#28a745' : '#dc3545'}">
+                ${total}/36 (${percent}%)
+            </div>
+            <div style="font-size:2em;padding:20px;border-radius:20px;margin:20px 0;background:${passed ? 'rgba(144,238,144,0.9)' : 'rgba(255,204,203,0.9)'}">
+                ${passed ? '🏆 ЭТАП ПРОЙДЕН! Анализ команды завершён!' : '🔄 Требуется 24+ баллов'}
+            </div>
+        `;
+        document.getElementById('zone-results').innerHTML = `
+            <div class="score-detail">Зона 1 (Диагностика): <strong>${zoneScores[1]}/9</strong></div>
+            <div class="score-detail">Зона 2 (Кризис): <strong>${zoneScores[2]}/9</strong></div>
+            <div class="score-detail">Зона 3 (Тимбилдинг): <strong>${zoneScores[3]}/9</strong></div>
+            <div class="score-detail">Зона 4 (Лидеры): <strong>${zoneScores[4]}/9</strong></div>
+        `;
+        document.getElementById('final-results-modal').classList.add('active');
+        document.querySelectorAll('.current-stage').forEach(z => z.style.display = 'none');
+        document.body.style.overflow = 'hidden';
+        localStorage.setItem('teamFinalScore', total);
+    }
+
+    function closeFinalModal() {
+        document.getElementById('final-results-modal').classList.remove('active');
+        document.body.style.overflow = 'auto';
+        // Убираем location.reload() – чтобы не сбрасывать прогресс и не терять токен (просто скрываем окно)
+    }
+
+    function saveResults() {
+        const total = Object.values(zoneScores).reduce((a,b)=>a+b,0);
+        const results = {
+            stage: 3,
+            name: 'Илья Демченко',
+            score: total,
+            date: new Date().toLocaleString('ru-RU'),
+            zones: zoneScores,
+            passed: total >= 24
+        };
+        localStorage.setItem('team_stage3_results', JSON.stringify(results));
+        alert('✅ Результаты сохранены в локальном хранилище!');
+    }
+
+    function clearProgressAndRestart() {
+        if (confirm('Очистить весь прогресс и начать заново?')) {
+            localStorage.removeItem('teamZoneProgress');
+            localStorage.removeItem('teamFinalScore');
+            location.reload();
+        }
+    }
+
+    // НОВАЯ ФУНКЦИЯ ЗАВЕРШЕНИЯ (ЗАКРЫТИЕ ВКЛАДКИ)
+    function finishStage() {
+        if (window.close) {
+            window.close();
+        } else {
+            alert("Пожалуйста, закройте вкладку вручную.");
+        }
+    }
+
+    function showHint(zoneId) {
+        const hints = {
+            1: 'Правильные причины: 1) низкое доверие, 2) разные цели, 3) проблемы коммуникации. Проблемы: конкретные, 40+ симв. каждая. Обоснование >150 симв.',
+            2: 'Оптимальные стратегии: Компромисс и Сотрудничество. Время вмешательства ~45 минут. План должен быть детальным (200+ симв.)',
+            3: 'Верные элементы: игра "Доверительный ход", кулинарный квест, указание таймлайна. Формат должен содержать "тимбилдинг". План из 3+ блоков, оценка эффективности 4 или 5.',
+            4: 'Выберите любые из предложенных (идентификация, обучение, поддержка, оценка и др.). Лидеров укажите не менее двух. Описания систем и механизмов от 100 символов.'
+        };
+        alert(hints[zoneId] || 'Подумайте ещё раз');
+    }
+
+    // Инициализация и обработчики
+    window.onload = init;
+    window.goToZone = goToZone;
+    window.openZone = openZone;
+    window.closeModal = closeModal;
+    window.submitZone1Part1 = submitZone1Part1;
+    window.submitZone1Part2 = submitZone1Part2;
+    window.submitZone2Part1 = submitZone2Part1;
+    window.submitZone2Part2 = submitZone2Part2;
+    window.submitZone3Part1 = submitZone3Part1;
+    window.submitZone3Part2 = submitZone3Part2;
+    window.submitZone4Part1 = submitZone4Part1;
+    window.submitZone4Part2 = submitZone4Part2;
+    window.showHint = showHint;
+    window.toggleInfo = toggleInfo;
+    window.closeFinalModal = closeFinalModal;
+    window.saveResults = saveResults;
+    window.clearProgressAndRestart = clearProgressAndRestart;
+    window.finishStage = finishStage;
+
+    // Привязываем новую кнопку
+    const finishBtn = document.getElementById('finishStageBtn');
+    if (finishBtn) {
+        finishBtn.addEventListener('click', finishStage);
+    }
+</script>
+</body>
+</html>

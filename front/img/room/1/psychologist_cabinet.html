@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система работы со студентами с особыми образовательными потребностями</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        .fullscreen-video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .fullscreen-video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+        .page-content {
+            display: none;
+        }
+
+        body { 
+            font-family: 'Georgia', serif; 
+            min-height: 100vh; 
+            overflow-x: hidden;
+        }
+        
+        .psychologist-office {
+            min-height: 100vh;
+            background-image: url('img/room/1/comnata2.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
+            padding: 40px;
+        }
+        
+        .office-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+        }
+        
+        .office-content {
+            position: relative; z-index: 2; max-width: 1200px; margin: 0 auto;
+        }
+        
+        h1 { 
+            text-align: center; color: white; font-size: 42px; margin-bottom: 40px; 
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+        }
+        
+        .current-stage {
+            backdrop-filter: blur(5px);
+            border-radius: 30px; 
+            padding: 50px; 
+            box-shadow: 0 25px 70px rgba(0,0,0,0.4); 
+            border: 2px solid rgba(255,255,255,0.3);
+            margin-bottom: 30px;
+            width: 1100px;
+            justify-items: center;
+            justify-self: center;
+        }
+        
+        .desk-folders {
+            display: flex; justify-content: center; gap: 30px; margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        .folder { 
+            width: 140px; height: 180px; border-radius: 15px; position: relative; cursor: pointer;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3); transition: all 0.4s;
+        }
+        .folder.red { background: linear-gradient(145deg, #FF6B6B, #FF8E8E, #FF5252); }
+        .folder.yellow { background: linear-gradient(145deg, #FFD93D, #FFE66D, #FFCA28); }
+        .folder.blue { background: linear-gradient(145deg, #4DABF7, #74C0FC, #4299E1); }
+        .folder.green { background: linear-gradient(145deg, #51CF66, #7EEB92, #38A169); }
+        .folder:hover { transform: scale(1.08) rotate(3deg) translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+        .folder-label { 
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); 
+            font-size: 13px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            text-align: center; width: 90%;
+        }
+        
+        .stages-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%);
+            backdrop-filter: blur(20px); padding: 25px 0;
+            z-index: 100;
+        }
+        .stages-container {
+            max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; gap: 25px;
+            flex-wrap: wrap;
+        }
+        .stage-btn {
+            padding: 20px 40px; border-radius: 50px; font-size: 17px; font-weight: bold;
+            border: none; cursor: pointer; transition: all 0.4s; position: relative;
+            min-width: 170px; text-align: center;
+        }
+        .stage-btn:not(.completed):not(.current):disabled {
+            opacity: 0.3; cursor: not-allowed; background: #666;
+        }
+        .stage-btn.current {
+            background: linear-gradient(145deg, #667eea, #764ba2); color: white;
+            box-shadow: 0 12px 35px rgba(102,126,234,0.6);
+        }
+        .stage-btn.completed {
+            background: linear-gradient(145deg, #51CF66, #7EEB92); color: white;
+            box-shadow: 0 12px 35px rgba(81,207,102,0.6);
+        }
+        .stage-btn.current:hover:not(:disabled), .stage-btn.completed:hover {
+            transform: translateY(-5px); box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+        .stage-lock { font-size: 22px; margin-right: 10px; }
+        
+        .modal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 1000; 
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-content {
+            background: linear-gradient(145deg, rgba(255,255,255,0.98), rgba(248,250,252,0.95)); 
+            border-radius: 30px; padding: 50px; max-width: 800px; max-height: 90vh; 
+            overflow-y: auto; box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3);
+            position: relative;
+        }
+        .close { 
+            position: absolute; top: 25px; right: 30px; font-size: 32px; cursor: pointer; 
+            color: #999; transition: 0.3s;
+        }
+        .close:hover { color: #FF6B6B; transform: rotate(90deg); }
+        
+        .dialogue { 
+            background: linear-gradient(145deg, #FFF8E1, #FFECB3); 
+            padding: 35px; border-radius: 25px; margin: 25px 0; font-style: italic; font-size: 18px;
+            position: relative; border-left: 6px solid #FFD93D; line-height: 1.6;
+        }
+        .dialogue::before {
+            content: '"'; font-size: 60px; color: #FFD93D; 
+            position: absolute; top: -15px; left: 25px; font-weight: bold;
+        }
+        
+        .question { 
+            margin: 30px 0; font-size: 20px; line-height: 1.6; color: #2D3748;
+            background: rgba(255,255,255,0.8); padding: 30px; border-radius: 20px; border-left: 5px solid #667eea;
+        }
+        .options { display: flex; flex-direction: column; gap: 15px; margin: 30px 0; }
+        .option { 
+            padding: 22px 28px; border-radius: 18px; background: rgba(255,255,255,0.85); 
+            cursor: pointer; transition: all 0.3s; border: 3px solid transparent;
+            font-size: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .option:hover:not(.selected):not(.correct):not(.incorrect) { 
+            background: rgba(102,126,234,0.1); border-color: #667eea; transform: translateX(8px);
+        }
+        .option.selected { 
+            background: rgba(102,126,234,0.2) !important; border-color: #667eea;
+            transform: translateX(8px); box-shadow: 0 10px 25px rgba(102,126,234,0.3);
+        }
+        .option.correct { 
+            background: linear-gradient(145deg, #51CF66, #7EEB92) !important; 
+            border-color: #38A169; color: white; transform: scale(1.02);
+        }
+        .option.incorrect { 
+            background: linear-gradient(145deg, #FF6B6B, #FF8E8E) !important; 
+            border-color: #E53E3E; color: white;
+        }
+        
+        .modal-buttons {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 40px;
+            gap: 20px;
+        }
+        .btn { 
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%); 
+            color: white; border: none; padding: 18px 35px; border-radius: 25px; 
+            font-size: 16px; cursor: pointer; transition: all 0.3s; 
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(102,126,234,0.5); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .submit-btn {
+            background: linear-gradient(145deg, #51CF66, #7EEB92) !important;
+        }
+        .submit-btn:hover { box-shadow: 0 15px 40px rgba(81,207,102,0.5) !important; }
+        
+        .hint { 
+            color: #667eea; font-size: 16px; cursor: pointer; 
+            padding: 15px 25px; border-radius: 25px; border: 2px solid rgba(102,126,234,0.3);
+            background: rgba(102,126,234,0.08); transition: all 0.3s; flex-shrink: 0;
+        }
+        .hint:hover { background: rgba(102,126,234,0.15); transform: scale(1.05); border-color: #667eea; }
+        
+        .selected-count {
+            background: rgba(255,217,61,0.2); padding: 10px 20px; border-radius: 20px;
+            font-weight: bold; color: #D69E2E; margin-bottom: 20px;
+        }
+
+        /* Дополнительные элементы */
+        .portfolio, .video-area, .flipchart {
+            background: rgba(255,255,255,0.9); padding: 25px; border-radius: 20px; margin: 20px 0;
+            border-left: 5px solid #51CF66;
+        }
+        
+        /* Стили для финального окна сертификата */
+        .final-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .final-modal-content {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 700px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .final-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .score-detail {
+            background: rgba(79,172,254,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            border-left: 5px solid #4facfe;
+        }
+        
+        @media (max-width: 768px) {
+            .desk-folders { flex-direction: column; align-items: center; gap: 25px; }
+            .stages-container { gap: 15px; }
+            .stage-btn { padding: 16px 30px; font-size: 15px; min-width: 140px; }
+            h1 { font-size: 32px; }
+            .modal-buttons { flex-direction: column; align-items: stretch; }
+            .modal-content { padding: 30px 25px; margin: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== ПОЛНОЭКРАННОЕ ВИДЕО ===== -->
+    <div class="fullscreen-video-container" id="videoContainer">
+        <video class="fullscreen-video" id="introVideo" 
+               src="img/room/1/1204(1).mp4" 
+               autoplay muted playsinline preload="auto">
+            Ваш браузер не поддерживает видео.
+        </video>
+    </div>
+    <div class="page-content">
+        <div class="psychologist-office">
+            <div class="office-overlay"></div>
+            <div class="office-content">
+                <h1>Кабинет психолога</h1>
+                
+                <!-- Этап 1: Студенты с ОВЗ -->
+                <div id="stage1" class="current-stage">
+                    <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Этап 1: Студенты с ограниченными возможностями здоровья</h2>
+                    <div class="desk-folders">
+                        <div class="folder red" data-stage="1">
+                            <div class="folder-label">Артём<br>Студент-повар</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Этап 2: Студенты-сироты -->
+                <div id="stage2" class="current-stage" style="display:none;">
+                    <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Этап 2: Студенты-сироты</h2>
+                    <div class="desk-folders">
+                        <div class="folder yellow" data-stage="2">
+                            <div class="folder-label">Студент-юрист<br>потеря опекуна</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Этап 3: Одарённые студенты -->
+                <div id="stage3" class="current-stage" style="display:none;">
+                    <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">💻 Этап 3: Одарённые студенты</h2>
+                    <div class="desk-folders">
+                        <div class="folder blue" data-stage="3">
+                            <div class="folder-label">Лиза<br>программист</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Этап 4: Многообразие -->
+                <div id="stage4" class="current-stage" style="display:none;">
+                    <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">🖼️ Этап 4: Многообразие в группе</h2>
+                    <div class="desk-folders">
+                        <div class="folder green" data-stage="4">
+                            <div class="folder-label">Конфликт<br>культур</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Панель этапов -->
+        <div class="stages-panel">
+            <div class="stages-container">
+                <button class="stage-btn current" data-stage="1">Этап 1</button>
+                <button class="stage-btn" disabled data-stage="2"><span class="stage-lock">🔒</span>Этап 2</button>
+                <button class="stage-btn" disabled data-stage="3"><span class="stage-lock">🔒</span>Этап 3</button>
+                <button class="stage-btn" disabled data-stage="4"><span class="stage-lock">🔒</span>Этап 4</button>
+            </div>
+        </div>
+        
+        <!-- МОДАЛЬНЫЕ ОКНА ВСЕХ ЭТАПОВ (полностью из вашего кода) -->
+        
+        <!-- Этап 1: Артём (ОВЗ) -->
+        <div id="modal1-1" class="modal">
+            <div class="modal-content">
+                <span class="close" data-close="1">×</span>
+                <div class="dialogue">Познакомьтесь с Артёмом. Талантливый парень мечтает стать шеф-поваром, но имеет серьёзное нарушение зрения.</div>
+                <p><strong>Медицинская справка:</strong> Инвалидность по зрению, 2 группа</p>
+                <p><strong>Характеристика:</strong> Отличные вкусовые качества, трудности с техническими аспектами</p>
+                <p><strong>Тест:</strong> Теория — 5/5, Практика — 2/5</p>
+                <div id="question1-1" class="question">Вопрос 1: Какие барьеры мешают Артёму?</div>
+                <div id="options1-1" class="options">
+                    <div class="option" data-correct="true">Не может читать обычные учебники</div>
+                    <div class="option" data-correct="true">Трудности с ориентированием на кухне</div>
+                    <div class="option" data-correct="true">Не различает цветовые маркеры продуктов</div>
+                    <div class="option" data-correct="false">Плохая память</div>
+                    <div class="option" data-correct="false">Лень и отсутствие мотивации</div>
+                </div>
+                <div id="selected-count1-1" class="selected-count" style="display:none;"></div>
+                <div class="modal-buttons">
+                    <button class="btn submit-btn" id="submit1-1" data-submit="1">Отправить ответ</button>
+                    <div class="hint" data-hint="1">Подсказка</div>
+                </div>
+                <div id="question2-1" class="question" style="display:none;">Вопрос 2: Какие адаптационные решения?</div>
+                <div id="options2-1" class="options" style="display:none;">
+                    <div class="option" data-correct="true">Тактильные пособия и брайлевские материалы</div>
+                    <div class="option" data-correct="true">Ассистент на практических занятиях</div>
+                    <div class="option" data-correct="true">Аудио-описание процессов</div>
+                    <div class="option" data-correct="false">Освободить от практики</div>
+                    <div class="option" data-correct="false">Перевести на другую специальность</div>
+                </div>
+                <div id="selected-count2-1" class="selected-count" style="display:none;"></div>
+                <div id="buttons2-1" class="modal-buttons" style="display:none;">
+                    <button class="btn submit-btn" data-textsubmit="1">Завершить этап</button>
+                    <div class="hint" data-hint2="1">Подсказка</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Этап 2: Студент-сирота -->
+        <div id="modal2-1" class="modal">
+            <div class="modal-content">
+                <span class="close" data-close="2">×</span>
+                <div class="dialogue">Мне больше не к кому обратиться за советом. Опекун, который заменял мне родителей, умер. Теперь я один...</div>
+                <div id="question1-2" class="question">Выберите правильные варианты ответа:</div>
+                <div id="options1-2" class="options">
+                    <div class="option" data-correct="false">Соберись, тряпка! В жизни бывают и не такие проблемы</div>
+                    <div class="option" data-correct="true">Расскажи, какая поддержка тебе нужна больше всего?</div>
+                    <div class="option" data-correct="false">Просто отдохни пару дней, всё наладится</div>
+                    <div class="option" data-correct="true">Давай вместе составим план твоей поддержки</div>
+                </div>
+                <div id="selected-count1-2" class="selected-count" style="display:none;"></div>
+                <div class="modal-buttons">
+                    <button class="btn submit-btn" id="submit1-2" data-submit="2">Отправить ответ</button>
+                    <div class="hint" data-hint="2">Подсказка</div>
+                </div>
+                <div id="question2-2" class="question" style="display:none;">Система поддержки - выберите направления:</div>
+                <div id="options2-2" class="options" style="display:none;">
+                    <div class="option" data-correct="true">Психологическое сопровождение</div>
+                    <div class="option" data-correct="true">Помощь с жильём и питанием</div>
+                    <div class="option" data-correct="true">Юридическая консультация по наследованию</div>
+                    <div class="option" data-correct="false">Ежемесячные денежные подачки</div>
+                    <div class="option" data-correct="false">Освобождение от экзаменов</div>
+                </div>
+                <div id="selected-count2-2" class="selected-count" style="display:none;"></div>
+                <div id="buttons2-2" class="modal-buttons" style="display:none;">
+                    <button class="btn submit-btn" data-textsubmit="2">Завершить этап</button>
+                    <div class="hint" data-hint2="2">Подсказка</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Этап 3: Лиза (одарённая) -->
+        <div id="modal3-1" class="modal">
+            <div class="modal-content">
+                <span class="close" data-close="3">×</span>
+                <div class="dialogue">А это — Лиза. В 16 лет уже разработала три мобильных приложения. Но на парах скучает, конфликтует с преподавателями.</div>
+                <div class="portfolio">
+                    <strong>Портфолио:</strong> Дипломы олимпиад, приложения для слабовидящих, проблемы с коммуникацией
+                </div>
+                <div id="question1-3" class="question">Конструктор индивидуальной программы - выберите элементы:</div>
+                <div id="options1-3" class="options">
+                    <div class="option" data-correct="true">Углублённый курс программирования</div>
+                    <div class="option" data-correct="true">Участие в хакатонах и конкурсах</div>
+                    <div class="option" data-correct="true">Наставничество от IT-специалистов</div>
+                    <div class="option" data-correct="false">Освобождение от "ненужных" предметов</div>
+                    <div class="option" data-correct="false">Индивидуальный график без посещения пар</div>
+                </div>
+                <div id="selected-count1-3" class="selected-count" style="display:none;"></div>
+                <div class="modal-buttons">
+                    <button class="btn submit-btn" id="submit1-3" data-submit="3">Отправить ответ</button>
+                    <div class="hint" data-hint="3">Подсказка</div>
+                </div>
+                <div id="question2-3" class="question" style="display:none;">Вопрос для размышления: Как помочь Лизе развить социальные навыки?</div>
+                <div id="options2-3" class="options" style="display:none;">
+                    <div class="option" data-correct="true">Тренинги коммуникации</div>
+                    <div class="option" data-correct="true">Групповые проекты</div>
+                    <div class="option" data-correct="true">Работа с психологом</div>
+                    <div class="option" data-correct="false">Изолировать от группы</div>
+                </div>
+                <div id="selected-count2-3" class="selected-count" style="display:none;"></div>
+                <div id="buttons2-3" class="modal-buttons" style="display:none;">
+                    <button class="btn submit-btn" data-textsubmit="3">Завершить этап</button>
+                    <div class="hint" data-hint2="3">Подсказка</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Этап 4: Многообразие -->
+        <div id="modal4-1" class="modal">
+            <div class="modal-content">
+                <span class="close" data-close="4">×</span>
+                <div class="flipchart">
+                    <strong>Видеозапись конфликта:</strong> "У вас там по-другому принято, а здесь наши правила!" / "Мой способ тоже имеет право!"
+                </div>
+                <div id="question1-4" class="question">Вопрос 1: Когда следует вмешаться?</div>
+                <div id="options1-4" class="options">
+                    <div class="option" data-correct="false">Сразу прервать конфликт</div>
+                    <div class="option" data-correct="true">Дать высказаться, но контролировать эмоции</div>
+                    <div class="option" data-correct="false">Наблюдать до эскалации</div>
+                </div>
+                <div id="selected-count1-4" class="selected-count" style="display:none;"></div>
+                <div class="modal-buttons">
+                    <button class="btn submit-btn" id="submit1-4" data-submit="4">Отправить ответ</button>
+                    <div class="hint" data-hint="4">Подсказка</div>
+                </div>
+                <div id="question2-4" class="question" style="display:none;">Вопрос 2: Стратегия разрешения:</div>
+                <div id="options2-4" class="options" style="display:none;">
+                    <div class="option" data-correct="true">Провести индивидуальные беседы</div>
+                    <div class="option" data-correct="true">Организовать межкультурный диалог</div>
+                    <div class="option" data-correct="false">Наказать зачинщика</div>
+                </div>
+                <div id="selected-count2-4" class="selected-count" style="display:none;"></div>
+                <div id="buttons2-4" class="modal-buttons" style="display:none;">
+                    <button class="btn submit-btn" data-secondsubmit="4">Далее</button>
+                    <div class="hint" data-hint2="4">Подсказка</div>
+                </div>
+                <div id="question3-4" class="question" style="display:none;">Вопрос 3: Мероприятия для профилактики:</div>
+                <div id="options3-4" class="options" style="display:none;">
+                    <div class="option" data-correct="true">Тренинг межкультурной коммуникации</div>
+                    <div class="option" data-correct="true">Совместный проект "Кухни народов мира"</div>
+                    <div class="option" data-correct="true">Лекция о толерантности</div>
+                    <div class="option" data-correct="false">Разделить группу на "своих" и "приезжих"</div>
+                </div>
+                <div id="selected-count3-4" class="selected-count" style="display:none;"></div>
+                <div id="buttons3-4" class="modal-buttons" style="display:none;">
+                    <button class="btn submit-btn" data-textsubmit="4">Завершить этап</button>
+                    <div class="hint" data-hint3="4">Подсказка</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ФИНАЛЬНОЕ ОКНО СЕРТИФИКАТА -->
+        <div id="finalCertificateModal" class="final-modal-overlay">
+            <div class="final-modal-content">
+                <button class="final-modal-close" id="closeFinalBtn">&times;</button>
+                <h2 style="margin-bottom:20px;">🎓 Сертификат о прохождении</h2>
+                <h3 style="color:#4facfe; margin-bottom:30px;">"Кабинет психолога"</h3>
+                <div id="finalScoreDisplay" style="font-size:24px; margin:20px 0;"></div>
+                <div id="stagesResultDisplay" style="margin:20px 0;"></div>
+                <div style="margin-top:30px;">
+                    <button id="finishStageBtn" class="btn" style="background:#28a745; font-size:18px; padding:12px 30px;">🏁 Завершить этап</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== УПРАВЛЕНИЕ ВИДЕО (без изменений) =====
+        document.addEventListener("DOMContentLoaded", function() {
+            const videoContainer = document.getElementById('videoContainer');
+            const introVideo = document.getElementById('introVideo');
+            const pageContent = document.querySelector('.page-content');
+            introVideo.addEventListener('ended', function() {
+                videoContainer.style.display = 'none';
+                pageContent.style.display = 'block';
+                initStages();
+            });
+            introVideo.addEventListener('error', function() {
+                videoContainer.style.display = 'none';
+                pageContent.style.display = 'block';
+                initStages();
+            });
+            introVideo.play().catch(function() {
+                videoContainer.style.display = 'none';
+                pageContent.style.display = 'block';
+                initStages();
+            });
+        });
+
+        // ===== ОСНОВНАЯ ЛОГИКА (адаптирована для работы с кнопками) =====
+        let currentStage = 1;
+        let stageProgress = JSON.parse(localStorage.getItem('stageProgress')) || {};
+        let stageScores = {1:0, 2:0, 3:0, 4:0};
+        let tempScore = 0;
+        let currentQuestionNum = 1;
+        let totalPsychScore = 0;
+        const teamName = sessionStorage.getItem('teamName') || 'Без команды';
+
+        function saveToDB(stage, score) {
+            fetch('save_score.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ stage: 'psych_'+stage, score, team_name: teamName })
+            }).catch(e=>console.log(e));
+            localStorage.setItem(`psych_stage_${stage}`, score);
+        }
+
+        function initStages() {
+            const saved = localStorage.getItem('currentStage') || 1;
+            currentStage = parseInt(saved);
+            showCurrentStage();
+            updateStageButtons();
+        }
+
+        function showCurrentStage() {
+            document.querySelectorAll('.current-stage').forEach(s => s.style.display = 'none');
+            const el = document.getElementById(`stage${currentStage}`);
+            if (el) el.style.display = 'block';
+        }
+
+        function goToStage(stageNum) {
+            if (stageNum <= currentStage) {
+                currentStage = stageNum;
+                localStorage.setItem('currentStage', currentStage);
+                showCurrentStage();
+                updateStageButtons();
+            } else alert(`Сначала завершите Этап ${currentStage}`);
+        }
+
+        function updateStageButtons() {
+            const buttons = document.querySelectorAll('.stage-btn');
+            buttons.forEach((btn, idx) => {
+                const sn = idx+1;
+                btn.classList.remove('current','completed');
+                if (sn < currentStage) {
+                    btn.classList.add('completed');
+                    btn.innerHTML = `Этап ${sn} ✅`;
+                    btn.disabled = false;
+                } else if (sn === currentStage) {
+                    btn.classList.add('current');
+                    btn.disabled = false;
+                    btn.innerHTML = `Этап ${sn}`;
+                } else {
+                    btn.disabled = true;
+                    btn.innerHTML = `<span class="stage-lock">🔒</span>Этап ${sn}`;
+                }
+            });
+        }
+
+        // Открытие папки
+        document.querySelectorAll('.folder').forEach(folder => {
+            folder.addEventListener('click', function() {
+                let stage = parseInt(this.getAttribute('data-stage'));
+                if (stage <= currentStage) {
+                    document.getElementById(`modal${stage}-1`).style.display = 'flex';
+                    resetStage(stage);
+                    currentQuestionNum = 1;
+                    tempScore = 0;
+                } else alert(`Сначала завершите Этап ${currentStage}`);
+            });
+        });
+
+        function closeModal(stage) {
+            document.getElementById(`modal${stage}-1`).style.display = 'none';
+        }
+
+        function resetStage(stage) {
+            // Сброс выбора и отображения
+            for (let q=1; q<=3; q++) {
+                const opts = document.querySelectorAll(`#options${q}-${stage} .option`);
+                opts.forEach(opt => opt.classList.remove('selected','correct','incorrect'));
+                const fields = document.querySelectorAll(`#options${q}-${stage} input, #options${q}-${stage} textarea`);
+                fields.forEach(f => f.value = '');
+                const countSpan = document.getElementById(`selected-count${q}-${stage}`);
+                if (countSpan) countSpan.style.display = 'none';
+            }
+            document.getElementById(`question1-${stage}`).style.display = 'block';
+            document.getElementById(`options1-${stage}`).style.display = 'flex';
+            const btnDiv = document.querySelector(`#modal${stage}-1 .modal-buttons`);
+            if (btnDiv) btnDiv.style.display = 'flex';
+            document.getElementById(`question2-${stage}`).style.display = 'none';
+            const opt2 = document.getElementById(`options2-${stage}`);
+            if (opt2) opt2.style.display = 'none';
+            const btns2 = document.getElementById(`buttons2-${stage}`);
+            if (btns2) btns2.style.display = 'none';
+            const q3 = document.getElementById(`question3-${stage}`);
+            if (q3) q3.style.display = 'none';
+            const opt3 = document.getElementById(`options3-${stage}`);
+            if (opt3) opt3.style.display = 'none';
+            const btns3 = document.getElementById(`buttons3-${stage}`);
+            if (btns3) btns3.style.display = 'none';
+        }
+
+        // Выбор опций
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('option')) {
+                e.target.classList.toggle('selected');
+                updateSelectedCount();
+            }
+        });
+
+        function updateSelectedCount() {
+            const activeModal = document.querySelector('.modal[style*="display: flex"]');
+            if (!activeModal) return;
+            const stage = parseInt(activeModal.id.split('-')[0].replace('modal',''));
+            const qNum = currentQuestionNum;
+            const selected = activeModal.querySelectorAll(`#options${qNum}-${stage} .option.selected`);
+            const countSpan = activeModal.querySelector(`#selected-count${qNum}-${stage}`);
+            if (countSpan) {
+                countSpan.textContent = `Выбрано: ${selected.length}`;
+                countSpan.style.display = selected.length ? 'block' : 'none';
+            }
+        }
+
+        // Отправка первого вопроса
+        document.querySelectorAll('[data-submit]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const stage = parseInt(btn.getAttribute('data-submit'));
+                const modal = document.getElementById(`modal${stage}-1`);
+                const options = modal.querySelectorAll(`#options1-${stage} .option`);
+                let correctSelected = 0, wrongSelected = 0;
+                options.forEach(opt => {
+                    opt.style.pointerEvents = 'none';
+                    const isCorrect = opt.dataset.correct === 'true';
+                    const isSelected = opt.classList.contains('selected');
+                    if (isCorrect && isSelected) {
+                        correctSelected++;
+                        opt.classList.add('correct');
+                    } else if (!isCorrect && isSelected) {
+                        wrongSelected++;
+                        opt.classList.add('incorrect');
+                    } else if (isCorrect && !isSelected) opt.classList.add('correct');
+                });
+                let qScore = (correctSelected * 1) - (wrongSelected * 1);
+                if (qScore < 0) qScore = 0;
+                tempScore += qScore;
+                const resultDiv = document.createElement('div');
+                resultDiv.innerHTML = `<strong>Вопрос 1: +${qScore} баллов (всего в этапе: ${tempScore})</strong>`;
+                resultDiv.style.cssText = 'margin:15px 0; padding:10px; background:#e0e0e0; border-radius:10px;';
+                modal.querySelector(`#options1-${stage}`).after(resultDiv);
+                setTimeout(() => {
+                    document.getElementById(`question1-${stage}`).style.display = 'none';
+                    document.getElementById(`options1-${stage}`).style.display = 'none';
+                    modal.querySelector('.modal-buttons').style.display = 'none';
+                    document.getElementById(`question2-${stage}`).style.display = 'block';
+                    document.getElementById(`options2-${stage}`).style.display = 'flex';
+                    document.getElementById(`buttons2-${stage}`).style.display = 'flex';
+                    currentQuestionNum = 2;
+                }, 1500);
+            });
+        });
+
+        // Обработка текстового завершения этапа (для этапов 1-3)
+        document.querySelectorAll('[data-textsubmit]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const stage = parseInt(btn.getAttribute('data-textsubmit'));
+                let add = 3;
+                tempScore += add;
+                stageScores[stage] = tempScore;
+                saveToDB(stage, tempScore);
+                completeStage(stage);
+            });
+        });
+
+        // Специальная обработка для этапа 4 (три вопроса)
+        document.querySelectorAll('[data-secondsubmit]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const stage = parseInt(btn.getAttribute('data-secondsubmit'));
+                const modal = document.getElementById(`modal${stage}-1`);
+                const options = modal.querySelectorAll(`#options2-${stage} .option`);
+                let correctSelected = 0;
+                options.forEach(opt => {
+                    opt.style.pointerEvents = 'none';
+                    if (opt.dataset.correct === 'true' && opt.classList.contains('selected')) {
+                        correctSelected++;
+                        opt.classList.add('correct');
+                    } else if (opt.dataset.correct === 'true') opt.classList.add('correct');
+                });
+                let score = correctSelected >= 2 ? 2 : correctSelected;
+                tempScore += score;
+                const resultDiv = document.createElement('div');
+                resultDiv.innerHTML = `<strong>Вопрос 2: +${score} баллов</strong>`;
+                modal.querySelector(`#options2-${stage}`).after(resultDiv);
+                setTimeout(() => {
+                    document.getElementById(`question2-${stage}`).style.display = 'none';
+                    document.getElementById(`options2-${stage}`).style.display = 'none';
+                    document.getElementById(`buttons2-${stage}`).style.display = 'none';
+                    document.getElementById(`question3-${stage}`).style.display = 'block';
+                    document.getElementById(`options3-${stage}`).style.display = 'flex';
+                    document.getElementById(`buttons3-${stage}`).style.display = 'flex';
+                    currentQuestionNum = 3;
+                }, 1500);
+            });
+        });
+
+        // Завершение этапа (общее)
+        function completeStage(stageNum) {
+            stageProgress[stageNum] = true;
+            currentStage++;
+            if (currentStage > 4) {
+                const total = Object.values(stageScores).reduce((a,b)=>a+b,0);
+                document.getElementById('finalScoreDisplay').innerHTML = `<strong>Итоговый балл: ${total}/36</strong> (${Math.round(total/36*100)}%)`;
+                let zonesHtml = '';
+                for (let i=1; i<=4; i++) {
+                    zonesHtml += `<div class="score-detail">Этап ${i}: ${stageScores[i]}/9</div>`;
+                }
+                document.getElementById('stagesResultDisplay').innerHTML = zonesHtml;
+                document.getElementById('finalCertificateModal').style.display = 'flex';
+                return;
+            }
+            localStorage.setItem('currentStage', currentStage);
+            localStorage.setItem('stageProgress', JSON.stringify(stageProgress));
+            updateStageButtons();
+            showCurrentStage();
+            alert(`✅ Этап ${stageNum} завершён! Получено ${stageScores[stageNum]} / 9 баллов. Открыт Этап ${currentStage}`);
+            setTimeout(() => closeModal(stageNum), 500);
+        }
+
+        // Закрытие финального окна и закрытие вкладки
+        document.getElementById('finishStageBtn')?.addEventListener('click', () => {
+            if (window.close) window.close();
+            else alert("Пожалуйста, закройте вкладку вручную.");
+        });
+        document.getElementById('closeFinalBtn')?.addEventListener('click', () => {
+            document.getElementById('finalCertificateModal').style.display = 'none';
+        });
+
+        // Закрытие модальных окон по крестику
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', (e) => {
+                const modal = closeBtn.closest('.modal');
+                if (modal) modal.style.display = 'none';
+            });
+        });
+
+        // Инициализация
+        initStages();
+
+        // Экспорт глобальных функций (для совместимости)
+        window.goToStage = goToStage;
+        window.openFolder = () => {};
+        window.closeModal = closeModal;
+        window.submitAnswer = () => {};
+        window.showHint = (stage, folder) => {
+            const hints = {
+                '1,1': 'Барьеры связаны со зрением (1-3), решения - адаптация (1-3)',
+                '2,1': 'Эмпатия и системная поддержка, а не деньги/освобождение',
+                '3,1': 'Развивать таланты + социальные навыки',
+                '4,1': 'Контроль эмоций, диалог, профилактика'
+            };
+            alert(hints[`${stage},${folder}`] || 'Принципы инклюзивного образования');
+        };
+    </script>
+</body>
+</html>

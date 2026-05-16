@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Лекционный зал – Этап 1 квеста</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            overflow: hidden;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #092037;
+            color: white;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .timer {
+            font-family: monospace;
+            font-size: 20px;
+        }
+        .room-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 50px);
+            background-image: url('comnata.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        .board-title {
+            text-align: center;
+            position: absolute;
+            top: 190px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 12px;
+            white-space: nowrap;
+            background: none;
+            padding: 0;
+            border: none;
+            text-shadow: 1px 1px 2px black;
+        }
+        .point {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 100, 100, 0.8);
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            border: 2px solid white;
+            transition: all 0.2s;
+            z-index: 50;
+        }
+        .point:hover {
+            background-color: rgba(255, 50, 50, 1);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .image-point {
+            background-image: url('netvork.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: transparent !important;
+            border: none;
+        }
+        .popup {
+            position: absolute;
+            background: white;
+            border: 1px solid #aaa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: none;
+            min-width: 200px;
+            z-index: 200;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .popup img {
+            max-width: 100%;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 0;
+            width: 350px;
+            text-align: center;
+            position: relative;
+            margin-top: 200px;
+            box-shadow: none;
+            border: none;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            border: none;
+            border-bottom: 1px solid #ccc;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+        }
+        .modal-content input:focus {
+            border-bottom-color: #4facfe;
+        }
+        .modal-content button {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #007bff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .modal-content button:hover {
+            text-decoration: underline;
+        }
+        .modal-content .message {
+            color: red;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #999;
+        }
+        .close-btn:hover { color: #ff6b6b; }
+        .attempts {
+            text-align: right;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        /* Окно с баллами (вместо видео) */
+        .score-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 2100;
+            display: none;
+            border: 2px solid gold;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+        .score-popup button {
+            background: #4facfe;
+            margin-top: 20px;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+        @media (max-width: 768px) {
+            .point { width: 30px; height: 30px; }
+            .modal-content { width: 90%; margin-top: 100px; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div>Этап 1: Лекционный зал</div>
+    <div class="timer" id="timer">10:00</div>
+</header>
+
+<div class="room-container" id="room">
+    <h3 class="board-title">Визуализация скрытых аспектов<br>речи помогает в диагностике</h3>
+
+    <div class="point" style="top: 400px; left: 30px;" data-popup="popup1"></div>
+    <div class="point" style="top: 350px; left: 590px;" data-popup="popup2"></div>
+    <div class="point" style="top: 280px; left: 210px;" data-popup="popup3"></div>
+    <div class="point" style="top: 220px; left: 1030px;" data-popup="popup4"></div>
+    <div class="point" id="triggerForm" style="top: 300px; left: 300px; background-color: rgba(50,200,50,0.8);"></div>
+    <div class="point image-point" style="top: 500px; left: 300px; width: 80px; height: 80px;" data-popup="popup6"></div>
+
+    <div class="popup" id="popup1" style="top: 440px; left: 80px;">Звук можно увидеть.</div>
+    <div class="popup" id="popup2" style="top: 380px; left: 640px;"><img src="monitor.png" width="250px"></div>
+    <div class="popup" id="popup3" style="top: 320px; left: 260px;"><img src="SONIDO.jpg" width="250px"></div>
+    <div class="popup" id="popup4" style="top: 260px; left: 1080px;"><img src="obhenie.jpg" width="250px"></div>
+    <div class="popup" id="popup6" style="top: 550px; left: 400px;"><img src="netvork2.jpg" width="350px"></div>
+</div>
+
+<div class="modal-overlay" id="modalAnswerForm">
+    <div class="modal-content">
+        <button class="close-btn" id="closeModalBtn">&times;</button>
+        <div class="attempts" id="attempts">Попыток осталось: 3</div>
+        <input type="text" id="answer" placeholder="Введите ответ">
+        <div>
+            <button id="checkBtn">Проверить</button>
+            <button id="hintBtn" style="color:#ffa726;">Подсказка</button>
+        </div>
+        <div class="message" id="message"></div>
+    </div>
+</div>
+
+<!-- Окно с баллами (вместо видео) -->
+<div id="scorePopup" class="score-popup">
+    <h2>🎉 Поздравляем!</h2>
+    <p>Вы прошли первую комнату!</p>
+    <p>Ваш результат: <strong id="finalScore">0</strong> баллов</p>
+    <button id="closeScoreBtn">Продолжить</button>
+</div>
+
+<script>
+(function() {
+    const modal = document.getElementById('modalAnswerForm');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const closeScoreBtn = document.getElementById('closeScoreBtn');
+    const scorePopup = document.getElementById('scorePopup');
+    const finalScoreSpan = document.getElementById('finalScore');
+
+    function closeModalAndReturn() {
+        modal.style.display = 'none';
+    }
+    closeModalBtn.addEventListener('click', closeModalAndReturn);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModalAndReturn(); });
+
+    // Закрываем текущую вкладку (или показываем сообщение, если браузер блокирует)
+    function closeTab() {
+        if (window.close) {
+            window.close();
+        } else {
+            alert('Пожалуйста, закройте эту вкладку вручную.');
+        }
+    }
+
+    closeScoreBtn.addEventListener('click', () => {
+        scorePopup.style.display = 'none';
+        closeTab();
+    });
+
+    // Точки и попапы
+    const points = document.querySelectorAll('.point');
+    const popups = document.querySelectorAll('.popup');
+    function hideAllPopups() { popups.forEach(p => p.style.display = 'none'); }
+    points.forEach(point => {
+        point.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (point.id === 'triggerForm') {
+                modal.style.display = 'flex';
+                hideAllPopups();
+                return;
+            }
+            const popupId = point.getAttribute('data-popup');
+            if (popupId) {
+                hideAllPopups();
+                document.getElementById(popupId).style.display = 'block';
+            }
+        });
+    });
+    document.addEventListener('click', () => hideAllPopups());
+
+    // Игровая логика
+    let scoreRoom1 = 0;
+    let hintsUsed = 0;
+    let wrongAnswers = [];
+    let answeredCorrectly = false;
+    let timeLeft = 600;
+    let attemptsLeft = 3;
+
+    const correctAnswer = 'спектрограмма';
+    const answerHints = {
+        "невербальный": "Близко по смыслу, но это не инструмент анализа",
+        "визуализация": "Это процесс, а не конкретный инструмент",
+        "осциллограф": "Это прибор для другой задачи",
+        "мимика": "Это объект изучения, а не инструмент",
+        "диаграмма": "Слишком общее понятие",
+        "психолог": "Профессия верная, но инструмент другой",
+        "микрофон": "Микрофон записывает звук, но не делает его видимым",
+        "камера": "Камера показывает изображение, а нужно сделать видимым звук"
+    };
+    const hints = [
+        'У двери есть распечатка о визуализации звука.',
+        'Инструмент используется в фонетике и психологии для анализа речи.'
+    ];
+
+    const timerEl = document.getElementById('timer');
+    const attemptsEl = document.getElementById('attempts');
+    const messageEl = document.getElementById('message');
+    const answerInput = document.getElementById('answer');
+    const checkBtn = document.getElementById('checkBtn');
+    const hintBtn = document.getElementById('hintBtn');
+
+    function updateAttempts() {
+        attemptsEl.textContent = 'Попыток осталось: ' + attemptsLeft;
+    }
+
+    function showScorePopup(score) {
+        finalScoreSpan.textContent = score.toFixed(1);
+        scorePopup.style.display = 'block';
+    }
+
+    function saveResult(isSuccess, score) {
+        const teamName = sessionStorage.getItem('teamName') || 'Без команды';
+        fetch('save_score.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stage: isSuccess ? 'room1' : 'room1_failed',
+                score: score,
+                hints_used: hintsUsed,
+                wrong_answers: wrongAnswers.join(','),
+                time_left: timeLeft,
+                team_name: teamName,
+                timestamp: new Date().toISOString()
+            })
+        }).catch(e => console.log('Ошибка сохранения:', e));
+        localStorage.setItem('stage1_completed', isSuccess ? 'true' : 'false');
+        if (isSuccess) localStorage.setItem('room1_score', score.toFixed(1));
+    }
+
+    let timerInterval = setInterval(() => {
+        if (answeredCorrectly) return;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerEl.textContent = "Время вышло!";
+            answerInput.disabled = true;
+            checkBtn.disabled = true;
+            hintBtn.disabled = true;
+        } else {
+            timeLeft--;
+            const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const secs = (timeLeft % 60).toString().padStart(2, '0');
+            timerEl.textContent = `${mins}:${secs}`;
+        }
+    }, 1000);
+
+    hintBtn.addEventListener('click', () => {
+        if (answeredCorrectly) return;
+        if (hintsUsed < hints.length) {
+            alert(hints[hintsUsed]);
+            hintsUsed++;
+        } else {
+            alert('Подсказки закончились.');
+        }
+    });
+
+    checkBtn.addEventListener('click', () => {
+        if (answeredCorrectly) return;
+        const userAnswer = answerInput.value.trim().toLowerCase();
+        if (userAnswer === correctAnswer) {
+            scoreRoom1 = 10 - hintsUsed;
+            wrongAnswers.forEach(ans => { if (answerHints[ans]) scoreRoom1 += 0.5; });
+            if (scoreRoom1 < 0) scoreRoom1 = 0;
+            saveResult(true, scoreRoom1);
+            answeredCorrectly = true;
+            clearInterval(timerInterval);
+            modal.style.display = 'none';
+            showScorePopup(scoreRoom1);
+            return;
+        }
+        if (answerHints[userAnswer]) {
+            messageEl.textContent = answerHints[userAnswer];
+            wrongAnswers.push(userAnswer);
+        } else {
+            attemptsLeft--;
+            if (attemptsLeft > 0) {
+                messageEl.textContent = 'Неверно. ' + hints[0];
+                wrongAnswers.push(userAnswer);
+                updateAttempts();
+            } else {
+                messageEl.textContent = 'Попытки закончились. Правильный ответ: спектрограмма.';
+                answerInput.disabled = true;
+                checkBtn.disabled = true;
+                hintBtn.disabled = true;
+                saveResult(false, 0);
+                alert('Попытки закончились. Перезагрузите страницу для новой попытки.');
+            }
+        }
+        answerInput.value = '';
+    });
+    updateAttempts();
+})();
+</script>
+</body>
+</html>

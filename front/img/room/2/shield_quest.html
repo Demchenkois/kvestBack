@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профилактика рисков</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Georgia', serif; 
+            min-height: 100vh; 
+            overflow-x: hidden;
+        }
+        .psychologist-office {
+            min-height: 100vh;
+            background: url('img/room/2/kabinen.jpg') center/cover no-repeat fixed;
+            background-attachment: fixed;
+            position: relative;
+            padding: 40px;
+        }
+        .office-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+        }
+        .office-content {
+            position: relative; z-index: 2; max-width: 1200px; margin: 0 auto;
+        }
+        h1 {
+            text-align: center; color: white; font-size: 42px; margin-bottom: 40px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+        }
+        .current-stage {
+            backdrop-filter: blur(5px);
+            border-radius: 30px;
+            padding: 50px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.3);
+            margin-bottom: 30px;
+            width: 1100px;
+            justify-items: center;
+            justify-self: center;
+        }
+        .desk-folders {
+            display: flex; justify-content: center; gap: 30px; margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        .folder {
+            width: 140px; height: 180px; border-radius: 15px; position: relative; cursor: pointer;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3); transition: all 0.4s;
+        }
+        .folder.red { background: linear-gradient(145deg, #FF6B6B, #FF8E8E, #FF5252); }
+        .folder.yellow { background: linear-gradient(145deg, #FFD93D, #FFE66D, #FFCA28); }
+        .folder.blue { background: linear-gradient(145deg, #4DABF7, #74C0FC, #4299E1); }
+        .folder.green { background: linear-gradient(145deg, #51CF66, #7EEB92, #38A169); }
+        .folder:hover { transform: scale(1.08) rotate(3deg) translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+        .folder-label {
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            font-size: 13px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            text-align: center; width: 90%;
+        }
+        .stages-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.98) 100%);
+            backdrop-filter: blur(20px); padding: 25px 0;
+            z-index: 100;
+        }
+        .stages-container {
+            max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; gap: 25px;
+            flex-wrap: wrap;
+        }
+        .stage-btn {
+            padding: 20px 40px; border-radius: 50px; font-size: 17px; font-weight: bold;
+            border: none; cursor: pointer; transition: all 0.4s; position: relative;
+            min-width: 170px; text-align: center;
+        }
+        .stage-btn:not(.completed):not(.current):disabled {
+            opacity: 0.3; cursor: not-allowed; background: #666;
+        }
+        .stage-btn.current {
+            background: linear-gradient(145deg, #667eea, #764ba2); color: white;
+            box-shadow: 0 12px 35px rgba(102,126,234,0.6);
+        }
+        .stage-btn.completed {
+            background: linear-gradient(145deg, #51CF66, #7EEB92); color: white;
+            box-shadow: 0 12px 35px rgba(81,207,102,0.6);
+        }
+        .stage-lock { font-size: 22px; margin-right: 10px; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-content {
+            background: linear-gradient(145deg, rgba(255,255,255,0.98), rgba(248,250,252,0.95));
+            border-radius: 30px; padding: 50px; max-width: 800px; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.3);
+            position: relative;
+        }
+        .close {
+            position: absolute; top: 25px; right: 30px; font-size: 32px; cursor: pointer;
+            color: #999; transition: 0.3s;
+        }
+        .close:hover { color: #FF6B6B; transform: rotate(90deg); }
+        .dialogue {
+            background: linear-gradient(145deg, #FFF8E1, #FFECB3);
+            padding: 35px; border-radius: 25px; margin: 25px 0; font-style: italic; font-size: 18px;
+            position: relative; border-left: 6px solid #FFD93D; line-height: 1.6;
+        }
+        .dialogue::before {
+            content: '"'; font-size: 60px; color: #FFD93D;
+            position: absolute; top: -15px; left: 25px; font-weight: bold;
+        }
+        .question {
+            margin: 30px 0; font-size: 20px; line-height: 1.6; color: #2D3748;
+            background: rgba(255,255,255,0.8); padding: 30px; border-radius: 20px; border-left: 5px solid #667eea;
+        }
+        .options { display: flex; flex-direction: column; gap: 15px; margin: 30px 0; }
+        .option {
+            padding: 18px 25px; border-radius: 18px; background: rgba(255,255,255,0.85);
+            cursor: pointer; transition: all 0.3s; border: 3px solid transparent;
+            font-size: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .option:hover:not(.selected):not(.correct):not(.incorrect) {
+            background: rgba(102,126,234,0.1); border-color: #667eea; transform: translateX(8px);
+        }
+        .option.selected {
+            background: rgba(102,126,234,0.2) !important; border-color: #667eea;
+            transform: translateX(8px); box-shadow: 0 10px 25px rgba(102,126,234,0.3);
+        }
+        .option.correct {
+            background: linear-gradient(145deg, #51CF66, #7EEB92) !important;
+            border-color: #38A169; color: white; transform: scale(1.02);
+        }
+        .option.incorrect {
+            background: linear-gradient(145deg, #FF6B6B, #FF8E8E) !important;
+            border-color: #E53E3E; color: white;
+        }
+        .system-options .option {
+            margin-bottom: 5px;
+        }
+        .modal-buttons {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 40px;
+            gap: 20px;
+        }
+        .btn {
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 18px 35px; border-radius: 25px;
+            font-size: 16px; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(102,126,234,0.5); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .submit-btn {
+            background: linear-gradient(145deg, #51CF66, #7EEB92) !important;
+        }
+        .hint {
+            color: #667eea; font-size: 16px; cursor: pointer;
+            padding: 15px 25px; border-radius: 25px; border: 2px solid rgba(102,126,234,0.3);
+            background: rgba(102,126,234,0.08); transition: all 0.3s; flex-shrink: 0;
+        }
+        .hint:hover { background: rgba(102,126,234,0.15); transform: scale(1.05); border-color: #667eea; }
+        .selected-count {
+            background: rgba(255,217,61,0.2); padding: 10px 20px; border-radius: 20px;
+            font-weight: bold; color: #D69E2E; margin-bottom: 20px;
+        }
+        textarea, input[type="text"] {
+            width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #ddd;
+            margin: 10px 0; font-family: inherit; font-size: 14px;
+        }
+        textarea:focus, input:focus { border-color: #667eea; outline: none; }
+        .form-group { margin: 20px 0; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .info-btn {
+            background: #6c5ce7; color: white; font-size: 12px; padding: 6px 12px; margin: 2px;
+            border: none; border-radius: 20px; cursor: pointer; transition: all 0.2s;
+        }
+        .info-btn:hover { background: #5a4ac7; transform: translateY(-1px); }
+        .info-panel {
+            background: rgba(255,255,255,0.9); border-radius: 12px; padding: 15px;
+            margin: 10px 0; display: none; border-left: 4px solid #6c5ce7;
+            font-size: 14px; color: #2d3748;
+        }
+        .info-panel.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .score-detail {
+            background: rgba(79,172,254,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            border-left: 5px solid #4facfe;
+        }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .final-modal-content {
+            background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+            border-radius: 25px; padding: 40px; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4); position: relative;
+            max-width: 700px; width: 90%; animation: modalSlideIn 0.4s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-close {
+            position: absolute; top: 20px; right: 25px; background: none; border: none;
+            font-size: 28px; cursor: pointer; color: #999; padding: 0;
+        }
+        .modal-close:hover { color: #ff6b6b; transform: rotate(90deg); }
+        
+        @media (max-width: 768px) {
+            .desk-folders { flex-direction: column; align-items: center; gap: 25px; }
+            .stages-container { gap: 15px; }
+            .stage-btn { padding: 16px 30px; font-size: 15px; min-width: 140px; }
+            h1 { font-size: 32px; }
+            .modal-buttons { flex-direction: column; align-items: stretch; }
+            .modal-content { padding: 30px 25px; margin: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="psychologist-office">
+    <div class="office-overlay"></div>
+    <div class="office-content">
+        <h1>🛡️ Щит безопасности</h1>
+        <!-- ЗОНА 1 -->
+        <div id="stage1" class="current-stage">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 1: Профилактика терроризма и экстремизма</h2>
+            <div class="desk-folders">
+                <div class="folder red" onclick="openFolder(1,1)">
+                    <div class="folder-label">Студент Иван К.<br>Признаки радикализации</div>
+                </div>
+            </div>
+        </div>
+        <!-- ЗОНА 2 -->
+        <div id="stage2" class="current-stage" style="display:none;">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 2: Профилактика психоактивных веществ</h2>
+            <div class="desk-folders">
+                <div class="folder yellow" onclick="openFolder(2,1)">
+                    <div class="folder-label">Повара группы 205<br>Алкоголь на рабочем месте</div>
+                </div>
+            </div>
+        </div>
+        <!-- ЗОНА 3 -->
+        <div id="stage3" class="current-stage" style="display:none;">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 3: Профилактика суицидального поведения</h2>
+            <div class="desk-folders">
+                <div class="folder blue" onclick="openFolder(3,1)">
+                    <div class="folder-label">Программист Алексей<br>Крик о помощи</div>
+                </div>
+            </div>
+        </div>
+        <!-- ЗОНА 4 -->
+        <div id="stage4" class="current-stage" style="display:none;">
+            <h2 style="text-align: center; color: #ffffff; margin-bottom: 30px;">📁 Зона 4: Социальная адаптация первокурсников</h2>
+            <div class="desk-folders">
+                <div class="folder green" onclick="openFolder(4,1)">
+                    <div class="folder-label">Группа 101<br>Кризис адаптации</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="stages-panel">
+    <div class="stages-container">
+        <button class="stage-btn current" onclick="goToStage(1)">Зона 1</button>
+        <button class="stage-btn" disabled onclick="goToStage(2)"><span class="stage-lock">🔒</span>Зона 2</button>
+        <button class="stage-btn" disabled onclick="goToStage(3)"><span class="stage-lock">🔒</span>Зона 3</button>
+        <button class="stage-btn" disabled onclick="goToStage(4)"><span class="stage-lock">🔒</span>Зона 4</button>
+    </div>
+</div>
+
+<!-- ==================== МОДАЛЬНЫЕ ОКНА ==================== -->
+
+<!-- ЗОНА 1 -->
+<div id="modal1-1" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(1)">×</span>
+        <div class="dialogue">Студент-юрист Иван К. стал замкнутым, резко изменил имидж, начал критиковать государственные институты в соцсетях и искать контакты с радикальными группами.</div>
+        <div id="question1-1" class="question">Вопрос 1: Выберите ТРИ признака радикализации (классические маркеры)</div>
+        <div id="options1-1" class="options">
+            <div class="option" data-correct="true">Изменение внешнего вида и стиля одежды</div>
+            <div class="option" data-correct="true">Резкое увлечение религией (сектой)</div>
+            <div class="option" data-correct="false">Конфликты с окружающими</div>
+            <div class="option" data-correct="true">Поиск контактов с радикальными группами</div>
+            <div class="option" data-correct="false">Увеличение времени в интернете</div>
+            <div class="option" data-correct="false">Снижение успеваемости</div>
+        </div>
+        <div id="selected-count1-1" class="selected-count" style="display:none;"></div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone1-doc1')">📄 ФЗ-159</button>
+            <button class="info-btn" onclick="toggleInfo('zone1-case')">📁 Кейс студента</button>
+            <button class="info-btn" onclick="toggleInfo('zone1-signs')">⚠️ Признаки</button>
+        </div>
+        <div id="zone1-doc1" class="info-panel">ФЗ-159 "О противодействии терроризму" - обязанность образовательных организаций выявлять признаки радикализации.</div>
+        <div id="zone1-case" class="info-panel">Кейс: Студент вёл переписку с координатором экстремистской группы через мессенджер, публиковал провокационные посты.</div>
+        <div id="zone1-signs" class="info-panel">Признаки радикализации: смена имиджа, уход в религиозную субкультуру, поиск радикальных контактов, агрессия к государственным символам.</div>
+        
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitAnswer(1,1)">Отправить ответ</button>
+            <div class="hint" onclick="showHint(1,1)">Подсказка</div>
+        </div>
+        <div id="question2-1" class="question" style="display:none;">Вопрос 2: Разработайте план действий (3 шага, минимум 40 символов каждый) + обоснование со ссылкой на ФЗ</div>
+        <div id="options2-1" style="display:none;">
+            <div class="form-group">
+                <label>Шаг 1:</label><textarea id="plan1" placeholder="Индивидуальная беседа с куратором (40+ символов)"></textarea>
+                <label>Шаг 2:</label><textarea id="plan2" placeholder="Уведомление родителей и деканата (40+ символов)"></textarea>
+                <label>Шаг 3:</label><textarea id="plan3" placeholder="Направление к психологу / соцпедагогу (40+ символов)"></textarea>
+                <label>Обоснование (упомяните ФЗ-159 или ФЗ-35):</label><textarea id="justify" placeholder="В соответствии с ФЗ-159..."></textarea>
+            </div>
+        </div>
+        <div id="buttons2-1" class="modal-buttons" style="display:none;">
+            <button class="btn submit-btn" onclick="submitTextStage(1)">Завершить зону</button>
+            <div class="hint" onclick="showHint(1,2)">Подсказка по плану</div>
+        </div>
+    </div>
+</div>
+
+<!-- ЗОНА 2 -->
+<div id="modal2-1" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(2)">×</span>
+        <div class="dialogue">Студенты-повара группы 205 регулярно употребляют алкоголь на рабочем месте. Запах спиртного по утрам, опоздания, ошибки в блюдах.</div>
+        <div id="question1-2" class="question">Вопрос 1: Выберите ТРИ признака употребления веществ</div>
+        <div id="options1-2" class="options">
+            <div class="option" data-correct="true">Запах алкоголя по утрам</div>
+            <div class="option" data-correct="true">Ошибки в приготовлении блюд</div>
+            <div class="option" data-correct="true">Снижение качества работы</div>
+            <div class="option" data-correct="false">Конфликты с коллегами</div>
+            <div class="option" data-correct="false">Частые больничные</div>
+            <div class="option" data-correct="false">Постоянные опоздания</div>
+        </div>
+        <div id="selected-count1-2" class="selected-count" style="display:none;"></div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone2-doc1')">📜 Приказ Минздрава</button>
+            <button class="info-btn" onclick="toggleInfo('zone2-situations')">⚠️ Ситуации</button>
+            <button class="info-btn" onclick="toggleInfo('zone2-method')">📘 Методичка</button>
+        </div>
+        <div id="zone2-doc1" class="info-panel">Приказ Минздрава №1034н "Об утверждении порядка оказания медпомощи при наркоманиях" — обязательное тестирование сотрудников кухонь.</div>
+        <div id="zone2-situations" class="info-panel">Ситуации: повар разлил суп, забыл соль, пришёл пьяным на смену, кричал на ученика.</div>
+        <div id="zone2-method" class="info-panel">Методрекомендации: тестирование, беседы, направление на лечение, увольнение при рецидиве.</div>
+        
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitAnswer(1,2)">Отправить ответ</button>
+            <div class="hint" onclick="showHint(2,1)">Подсказка</div>
+        </div>
+        <div id="question2-2" class="question" style="display:none;">Вопрос 2: Разработайте профилактическое мероприятие</div>
+        <div id="options2-2" style="display:none;">
+            <div class="form-group">
+                <label>Название мероприятия:</label><input type="text" id="eventName">
+                <label>Целевая аудитория:</label><input type="text" id="eventAudience">
+                <label>Цель:</label><input type="text" id="eventGoal">
+                <label>Формат:</label><input type="text" id="eventFormat">
+                <label>Ответственные и ресурсы (мин. 40 символов):</label><textarea id="eventResources"></textarea>
+            </div>
+        </div>
+        <div id="buttons2-2" class="modal-buttons" style="display:none;">
+            <button class="btn submit-btn" onclick="submitTextStage(2)">Завершить зону</button>
+            <div class="hint" onclick="showHint(2,2)">Подсказка по мероприятию</div>
+        </div>
+    </div>
+</div>
+
+<!-- ЗОНА 3 -->
+<div id="modal3-1" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(3)">×</span>
+        <div class="dialogue">Программист Алексей: «Жизнь бессмысленна, лучше исчезнуть». Друзья заметили подавленность, изоляцию.</div>
+        <div id="question1-3" class="question">Вопрос 1: Выберите ПРАВИЛЬНЫЕ реплики (3 штуки: эмпатия, поддержка, профессиональная помощь)</div>
+        <div id="options1-3" class="options">
+            <div class="option" data-correct="true">Я понимаю, тебе тяжело. Расскажи подробнее</div>
+            <div class="option" data-correct="false">Соберись, у всех проблемы!</div>
+            <div class="option" data-correct="true">Ты не один, мы поможем. Давай вместе найдём выход</div>
+            <div class="option" data-correct="false">Это просто лень</div>
+            <div class="option" data-correct="true">Я рядом. Позвони психологу: 8-800-2000-122</div>
+        </div>
+        <div id="selected-count1-3" class="selected-count" style="display:none;"></div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone3-algorithm')">📋 Алгоритм действий</button>
+            <button class="info-btn" onclick="toggleInfo('zone3-signals')">💬 Вербальные сигналы</button>
+            <button class="info-btn" onclick="toggleInfo('zone3-contacts')">📞 Контакты</button>
+        </div>
+        <div id="zone3-algorithm" class="info-panel"><strong>Алгоритм (5 шагов):</strong><br>1. Остановите разговор 2. Покажите эмпатию 3. Не оставляйте одного 4. Свяжитесь с психологом 5. Сопроводите до специалиста.</div>
+        <div id="zone3-signals" class="info-panel"><strong>Вербальные сигналы:</strong> "Жизнь бессмысленна", "Лучше исчезнуть", "Никто не нужен", "Всё равно", "Устал жить".</div>
+        <div id="zone3-contacts" class="info-panel"><strong>Контакты:</strong> Всероссийская линия 8-800-2000-122, студполиклиника +7 (383) 123-45-67, психолог куратор Иванова Е.В. (каб.305).</div>
+        
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitAnswer(1,3)">Отправить ответ</button>
+            <div class="hint" onclick="showHint(3,1)">Какие реплики верны?</div>
+        </div>
+        <div id="question2-3" class="question" style="display:none;">Вопрос 2: Необходимые ресурсы и поддержка (мин. 40 символов)</div>
+        <div id="options2-3" style="display:none;">
+            <textarea id="suicideResources" placeholder="Психолог, куратор, студполиклиника, телефон доверия..."></textarea>
+        </div>
+        <div id="buttons2-3" class="modal-buttons" style="display:none;">
+            <button class="btn submit-btn" onclick="submitTextStage(3)">Завершить зону</button>
+            <div class="hint" onclick="showHint(3,2)">Укажите телефон доверия</div>
+        </div>
+    </div>
+</div>
+
+<!-- ЗОНА 4 -->
+<div id="modal4-1" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal(4)">×</span>
+        <div class="dialogue">Первокурсники группы 101: 68% пропускают лекции, 45% не общаются, 32% планируют отчисление.</div>
+        <div id="question1-4" class="question">Вопрос 1: Выберите МИНИМУМ 3 причины дезадаптации</div>
+        <div id="options1-4" class="options">
+            <div class="option" data-correct="true">Отсутствие знакомства с преподавателями</div>
+            <div class="option" data-correct="true">Недостаток информации о расписании</div>
+            <div class="option" data-correct="false">Сложности с учебной нагрузкой</div>
+            <div class="option" data-correct="false">Финансовые трудности</div>
+            <div class="option" data-correct="true">Отсутствие друзей в группе</div>
+            <div class="option" data-correct="true">Неумение планировать время</div>
+        </div>
+        <div id="selected-count1-4" class="selected-count" style="display:none;"></div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+            <button class="info-btn" onclick="toggleInfo('zone4-survey')">📊 Результаты опроса</button>
+            <button class="info-btn" onclick="toggleInfo('zone4-practices')">🏆 Успешные практики</button>
+            <button class="info-btn" onclick="toggleInfo('zone4-method')">📖 Рекомендации</button>
+        </div>
+        <div id="zone4-survey" class="info-panel"><strong>Опрос 120 первокурсников:</strong><br>68% - не знают куратора,<br>54% - не понимают расписание,<br>45% - нет друзей в группе,<br>32% - думали об отчислении.</div>
+        <div id="zone4-practices" class="info-panel"><strong>Успешные практики:</strong> Buddy-система (МГУ) - 87% адаптация, кураторский час (СПбГУ) - 92% посещаемость, адаптационный лагерь (НИУ ВШЭ).</div>
+        <div id="zone4-method" class="info-panel"><strong>Методрекомендации:</strong> Buddy-система (старшие помогают), кураторские встречи еженедельно, адаптационные тренинги, онлайн-гид первокурсника.</div>
+        
+        <div class="modal-buttons">
+            <button class="btn submit-btn" onclick="submitAnswer(1,4)">Отправить ответ</button>
+            <div class="hint" onclick="showHint(4,1)">Причины из опроса</div>
+        </div>
+        <div id="question2-4" class="question" style="display:none;">Вопрос 2: Соберите систему адаптации (минимум 4 элемента)</div>
+        <div id="options2-4" class="options system-options">
+            <div class="option" data-correct="true">Buddy-система (старшие помогают)</div>
+            <div class="option" data-correct="true">Кураторские часы (еженедельно)</div>
+            <div class="option" data-correct="true">Адаптационные тренинги</div>
+            <div class="option" data-correct="true">Онлайн-гид первокурсника</div>
+            <div class="option" data-correct="false">Освобождение от пар</div>
+            <div class="option" data-correct="false">Денежные выплаты</div>
+        </div>
+        <div id="selected-count2-4" class="selected-count" style="display:none;"></div>
+        <div id="buttons2-4" class="modal-buttons" style="display:none;">
+            <button class="btn submit-btn" onclick="submitSecondStage(4)">Далее</button>
+            <div class="hint" onclick="showHint(4,2)">Выберите 4 правильных элемента</div>
+        </div>
+        <div id="question3-4" class="question" style="display:none;">Вопрос 3: Измеримые показатели эффективности (мин. 40 символов)</div>
+        <div id="options3-4" style="display:none;">
+            <textarea id="adaptMetrics" placeholder="Посещаемость >90%, отчисления <5%, удовлетворенность >85%..."></textarea>
+        </div>
+        <div id="buttons3-4" class="modal-buttons" style="display:none;">
+            <button class="btn submit-btn" onclick="submitTextStage(4)">Завершить зону</button>
+            <div class="hint" onclick="showHint(4,3)">Конкретные цифры</div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО РЕЗУЛЬТАТОВ -->
+<div id="final-results-modal" class="modal-overlay">
+    <div class="final-modal-content">
+        <button class="modal-close" onclick="closeFinalModal()">×</button>
+        <h2 style="text-align:center; color:#333; margin-bottom:20px;">🎓 Сертификат о прохождении</h2>
+        <h3 style="text-align:center; color:#4facfe; margin-bottom:30px;">"Профилактика рисков"</h3>
+        <div id="final-score" style="text-align:center;"></div>
+        <div id="zone-results" style="margin:20px 0;"></div>
+        <div style="text-align:center; margin:30px 0;">
+            <button onclick="saveResults()" class="btn" style="background:#4facfe; margin:5px;">💾 Сохранить результаты</button>
+            <button onclick="clearProgressAndRestart()" class="btn" style="background:#ff6b6b; margin:5px;">🔄 Пройти заново</button>
+            <!-- НОВАЯ КНОПКА ДЛЯ ЗАВЕРШЕНИЯ -->
+            <button id="finishStageBtn" class="btn" style="background:#28a745; margin:5px;">🏁 Завершить этап</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStage = 1;
+    let stageProgress = JSON.parse(localStorage.getItem('stageProgress_risk')) || {};
+    let currentQuestionNum = 1;
+    let stageScores = {1:0, 2:0, 3:0, 4:0};
+    let tempStageScore = 0;
+    let teamName = sessionStorage.getItem('teamName') || 'Команда';
+
+    function saveToDatabase(stage, score) {
+        console.log(`Сохранено: зона ${stage}, балл ${score}, команда ${teamName}`);
+        localStorage.setItem(`risk_stage_${stage}`, score);
+    }
+
+    function initStages() {
+        const saved = localStorage.getItem('currentRiskStage');
+        if(saved) currentStage = parseInt(saved);
+        showCurrentStage();
+        updateStageButtons();
+    }
+
+    function showCurrentStage() {
+        document.querySelectorAll('.current-stage').forEach(stage => stage.style.display = 'none');
+        document.getElementById(`stage${currentStage}`).style.display = 'block';
+    }
+
+    function goToStage(stageNum) {
+        if(stageNum <= currentStage) {
+            currentStage = stageNum;
+            localStorage.setItem('currentRiskStage', currentStage);
+            showCurrentStage();
+            updateStageButtons();
+        } else alert(`Сначала завершите зону ${currentStage}`);
+    }
+
+    function updateStageButtons() {
+        const btns = document.querySelectorAll('.stage-btn');
+        btns.forEach((btn, idx) => {
+            const sn = idx+1;
+            btn.classList.remove('current','completed');
+            if(sn < currentStage) {
+                btn.classList.add('completed');
+                btn.innerHTML = `Зона ${sn} ✅`;
+                btn.disabled = false;
+            } else if(sn === currentStage) {
+                btn.classList.add('current');
+                btn.disabled = false;
+                btn.innerHTML = `Зона ${sn}`;
+            } else {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="stage-lock">🔒</span>Зона ${sn}`;
+            }
+        });
+    }
+
+    function openFolder(stage) {
+        if(stage <= currentStage) {
+            document.getElementById(`modal${stage}-1`).style.display = 'flex';
+            resetStageModal(stage);
+            currentQuestionNum = 1;
+            tempStageScore = 0;
+        }
+    }
+
+    function closeModal(stage) {
+        document.getElementById(`modal${stage}-1`).style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+        if(e.target.classList.contains('option')) {
+            e.target.classList.toggle('selected');
+            updateSelectedCount();
+        }
+    });
+
+    function updateSelectedCount() {
+        const activeModal = document.querySelector('.modal[style*="display: flex"]');
+        if(!activeModal) return;
+        const stage = getStageFromModal(activeModal);
+        const qNum = currentQuestionNum;
+        const selected = activeModal.querySelectorAll(`#options${qNum}-${stage} .option.selected`);
+        const countSpan = activeModal.querySelector(`#selected-count${qNum}-${stage}`);
+        if(countSpan) {
+            countSpan.textContent = `Выбрано: ${selected.length}`;
+            countSpan.style.display = selected.length ? 'block' : 'none';
+        }
+    }
+
+    function getStageFromModal(modal) {
+        return parseInt(modal.id.split('-')[0].replace('modal',''));
+    }
+
+    function toggleInfo(id) {
+        const panel = document.getElementById(id);
+        if(panel) panel.classList.toggle('active');
+    }
+
+    // УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ДЛЯ ОТВЕТОВ С УЧЁТОМ ОСОБОЙ ЛОГИКИ ДЛЯ ЗОНЫ 4
+    function submitAnswer(qNum, stage) {
+        const modal = document.getElementById(`modal${stage}-1`);
+        const options = modal.querySelectorAll(`#options${qNum}-${stage} .option`);
+        let correctSelected = 0, wrongSelected = 0;
+        options.forEach(opt => {
+            opt.style.pointerEvents = 'none';
+            const isCorrect = opt.dataset.correct === 'true';
+            const isSelected = opt.classList.contains('selected');
+            if(isCorrect && isSelected) {
+                correctSelected++;
+                opt.classList.add('correct');
+            } else if(!isCorrect && isSelected) {
+                wrongSelected++;
+                opt.classList.add('incorrect');
+            } else if(isCorrect && !isSelected) opt.classList.add('correct');
+        });
+        
+        let questionScore;
+        if (stage === 4) {
+            // Для зоны 4 (причины дезадаптации) – 1 балл за правильную причину, но не более 3
+            questionScore = Math.min(correctSelected, 3);
+        } else {
+            // Для остальных зон – 2 балла за правильный вариант, штраф за неправильные
+            questionScore = (correctSelected * 2) - (wrongSelected * 2);
+            if(questionScore < 0) questionScore = 0;
+        }
+        
+        tempStageScore += questionScore;
+        const resultDiv = document.createElement('div');
+        resultDiv.style.cssText = `color:${questionScore>=0?'#00ff88':'#ff6b6b'}; margin:15px 0; padding:10px; background:rgba(0,0,0,0.05); border-radius:10px;`;
+        resultDiv.innerHTML = `<strong>Вопрос ${qNum}: +${questionScore} баллов</strong> (всего в зоне: ${tempStageScore})`;
+        modal.querySelector(`#options${qNum}-${stage}`).after(resultDiv);
+        saveToDatabase(`risk_stage${stage}_q${qNum}`, questionScore);
+        setTimeout(() => {
+            if(qNum === 1) {
+                document.getElementById(`question${qNum}-${stage}`).style.display = 'none';
+                document.getElementById(`options${qNum}-${stage}`).style.display = 'none';
+                document.querySelector(`#modal${stage}-1 .modal-buttons`).style.display = 'none';
+                document.getElementById(`question2-${stage}`).style.display = 'block';
+                const secondBlock = document.getElementById(`options2-${stage}`);
+                if(secondBlock) secondBlock.style.display = 'block';
+                const btnsDiv = document.getElementById(`buttons2-${stage}`);
+                if(btnsDiv) btnsDiv.style.display = 'flex';
+                currentQuestionNum = 2;
+            }
+        }, 1500);
+    }
+
+    function submitTextStage(stage) {
+        let additionalScore = 0;
+        if(stage === 1) {
+            const p1 = document.getElementById('plan1').value.trim();
+            const p2 = document.getElementById('plan2').value.trim();
+            const p3 = document.getElementById('plan3').value.trim();
+            const justify = document.getElementById('justify').value.toLowerCase();
+            if(p1.length >= 40 && p2.length >= 40 && p3.length >= 40) additionalScore += 2;
+            if(justify.includes('фз-159') || justify.includes('фз-35')) additionalScore += 1;
+        } 
+        else if(stage === 2) {
+            const name = document.getElementById('eventName').value.trim();
+            const aud = document.getElementById('eventAudience').value.trim();
+            const goal = document.getElementById('eventGoal').value.trim();
+            const format = document.getElementById('eventFormat').value.trim();
+            const res = document.getElementById('eventResources').value.trim();
+            if(name && aud && goal && format) additionalScore += 2;
+            if(res.length >= 40) additionalScore += 1;
+        }
+        else if(stage === 3) {
+            const res = document.getElementById('suicideResources').value.trim();
+            if(res.length >= 40) additionalScore += 3;
+        }
+        else if(stage === 4) {
+            const metrics = document.getElementById('adaptMetrics').value.trim();
+            // ИСПРАВЛЕНО: 1 балл вместо 2
+            if(metrics.length >= 40) additionalScore += 1;
+        }
+        tempStageScore += additionalScore;
+        stageScores[stage] = tempStageScore;
+        saveToDatabase(`risk_stage_${stage}`, tempStageScore);
+        completeStage(stage);
+    }
+
+    function submitSecondStage(stage) {
+        const modal = document.getElementById(`modal${stage}-1`);
+        const options = modal.querySelectorAll(`#options2-${stage} .option`);
+        let correctSelected = 0;
+        options.forEach(opt => {
+            opt.style.pointerEvents = 'none';
+            if(opt.dataset.correct === 'true' && opt.classList.contains('selected')) {
+                correctSelected++;
+                opt.classList.add('correct');
+            } else if(opt.dataset.correct === 'false' && opt.classList.contains('selected')) {
+                opt.classList.add('incorrect');
+            } else if(opt.dataset.correct === 'true' && !opt.classList.contains('selected')) {
+                opt.classList.add('correct');
+            }
+        });
+        let score = correctSelected >= 4 ? 4 : correctSelected;
+        tempStageScore += score;
+        const resultDiv = document.createElement('div');
+        resultDiv.innerHTML = `<strong>Система адаптации: +${score} баллов</strong>`;
+        modal.querySelector(`#options2-${stage}`).after(resultDiv);
+        saveToDatabase(`risk_stage4_q2`, score);
+        setTimeout(() => {
+            document.getElementById(`question2-${stage}`).style.display = 'none';
+            document.getElementById(`options2-${stage}`).style.display = 'none';
+            document.getElementById(`buttons2-${stage}`).style.display = 'none';
+            document.getElementById(`question3-${stage}`).style.display = 'block';
+            document.getElementById(`options3-${stage}`).style.display = 'block';
+            document.getElementById(`buttons3-${stage}`).style.display = 'flex';
+            currentQuestionNum = 3;
+        }, 1500);
+    }
+
+    function completeStage(stageNum) {
+        stageProgress[stageNum] = true;
+        currentStage++;
+        if(currentStage > 4) {
+            showFinalCertificate();
+            return;
+        }
+        localStorage.setItem('currentRiskStage', currentStage);
+        localStorage.setItem('stageProgress_risk', JSON.stringify(stageProgress));
+        updateStageButtons();
+        showCurrentStage();
+        alert(`✅ Зона ${stageNum} завершена! Получено ${stageScores[stageNum]} / 9 баллов. Открыта Зона ${currentStage}`);
+        setTimeout(() => closeModal(stageNum), 800);
+    }
+
+    function showFinalCertificate() {
+        const total = Object.values(stageScores).reduce((a,b)=>a+b,0);
+        const percent = Math.round(total / 36 * 100);
+        const passed = total >= 24;
+        document.getElementById('final-score').innerHTML =
+            `<div style="font-size:3.2em;margin:25px 0;font-weight:700;color:${passed ? '#28a745' : '#dc3545'};text-shadow:2px 2px 4px rgba(0,0,0,0.1);">
+                ${total}/36 (${percent}%)
+             </div>
+             <div style="font-size:2em;padding:20px;border-radius:20px;margin:20px 0;
+                 background:${passed ? 'rgba(144,238,144,0.9)' : 'rgba(255,204,203,0.9)'};
+                 box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                 ${passed ? '🏆 ЭТАП ПРОЙДЕН! Щит профилактики получен!' : '🔄 Требуется 24+ баллов'}
+             </div>`;
+        document.getElementById('zone-results').innerHTML =
+            `<div class="score-detail">Зона 1 (Терроризм): <strong>${stageScores[1] || 0}/9</strong></div>
+             <div class="score-detail">Зона 2 (ПАВ): <strong>${stageScores[2] || 0}/9</strong></div>
+             <div class="score-detail">Зона 3 (Суицид): <strong>${stageScores[3] || 0}/9</strong></div>
+             <div class="score-detail">Зона 4 (Адаптация): <strong>${stageScores[4] || 0}/9</strong></div>`;
+        document.getElementById('final-results-modal').classList.add('active');
+        document.querySelectorAll('.current-stage').forEach(z => z.style.display = 'none');
+        document.body.style.overflow = 'hidden';
+        localStorage.setItem('risk_completed', 'true');
+        localStorage.setItem('risk_total', total);
+    }
+
+    function closeFinalModal() {
+        document.getElementById('final-results-modal').classList.remove('active');
+        document.body.style.overflow = 'auto';
+        location.reload();
+    }
+
+    function saveResults() {
+        const total = Object.values(stageScores).reduce((a,b)=>a+b,0);
+        const results = {
+            stage: 2,
+            name: 'Илья Демченко',
+            score: total,
+            date: new Date().toLocaleString('ru-RU'),
+            zones: stageScores,
+            passed: total >= 24
+        };
+        localStorage.setItem('risk_stage2_results', JSON.stringify(results));
+        alert('✅ Результаты сохранены в локальном хранилище!');
+    }
+
+    function clearProgressAndRestart() {
+        if (confirm('Очистить весь прогресс и начать заново?')) {
+            localStorage.removeItem('currentRiskStage');
+            localStorage.removeItem('stageProgress_risk');
+            localStorage.removeItem('risk_stage_1');
+            localStorage.removeItem('risk_stage_2');
+            localStorage.removeItem('risk_stage_3');
+            localStorage.removeItem('risk_stage_4');
+            localStorage.removeItem('risk_total');
+            location.reload();
+        }
+    }
+
+    // НОВАЯ ФУНКЦИЯ ДЛЯ ЗАВЕРШЕНИЯ ЭТАПА И ВОЗВРАТА НА ГЛАВНУЮ
+    function finishStage() {
+    // Просто закрываем вкладку, не трогая родительскую страницу
+    if (window.close) {
+        window.close();
+        // Если браузер не позволяет закрыть, покажем сообщение
+        setTimeout(() => {
+            alert('Пожалуйста, закройте эту вкладку вручную, чтобы вернуться на главную страницу.');
+        }, 100);
+    } else {
+        alert('Пожалуйста, закройте эту вкладку вручную.');
+    }
+}
+
+    function resetStageModal(stage) {
+        for(let q=1; q<=3; q++) {
+            const opts = document.querySelectorAll(`#options${q}-${stage} .option`);
+            opts.forEach(opt => opt.classList.remove('selected','correct','incorrect'));
+            const fields = document.querySelectorAll(`#options${q}-${stage} input, #options${q}-${stage} textarea`);
+            fields.forEach(f => f.value = '');
+            const countSpan = document.getElementById(`selected-count${q}-${stage}`);
+            if(countSpan) countSpan.style.display = 'none';
+        }
+        document.getElementById(`question1-${stage}`).style.display = 'block';
+        document.getElementById(`options1-${stage}`).style.display = 'flex';
+        const btnDiv = document.querySelector(`#modal${stage}-1 .modal-buttons`);
+        if(btnDiv) btnDiv.style.display = 'flex';
+        document.getElementById(`question2-${stage}`).style.display = 'none';
+        const opt2 = document.getElementById(`options2-${stage}`);
+        if(opt2) opt2.style.display = 'none';
+        const btns2 = document.getElementById(`buttons2-${stage}`);
+        if(btns2) btns2.style.display = 'none';
+        const q3 = document.getElementById(`question3-${stage}`);
+        if(q3) q3.style.display = 'none';
+        const opt3 = document.getElementById(`options3-${stage}`);
+        if(opt3) opt3.style.display = 'none';
+        const btns3 = document.getElementById(`buttons3-${stage}`);
+        if(btns3) btns3.style.display = 'none';
+        currentQuestionNum = 1;
+    }
+
+    function showHint(stage, num) {
+        const hints = {
+            '1,1':'Выберите ровно три признака: изменение имиджа, религия, радикальные контакты',
+            '1,2':'План: беседа с куратором → уведомление родителей/деканата → психолог. Обоснуйте ФЗ-159',
+            '2,1':'Правильные: запах алкоголя, ошибки в блюдах, снижение качества работы',
+            '2,2':'Заполните все 4 поля мероприятия, ресурсы >40 символов',
+            '3,1':'Правильные реплики: 1 (эмпатия), 3 (поддержка), 5 (телефон)',
+            '3,2':'Укажите психолога, телефон доверия 8-800-2000-122',
+            '4,1':'Причины: незнание куратора, расписания, нет друзей, неумение планировать время',
+            '4,2':'Выберите 4 элемента: buddy, кураторские часы, тренинги, онлайн-гид',
+            '4,3':'Показатели: посещаемость, отчисления, удовлетворённость'
+        };
+        alert(hints[`${stage},${num}`] || 'Подумайте над правильным решением');
+    }
+
+    // ПРИВЯЗКА КНОПКИ ЗАВЕРШЕНИЯ ПОСЛЕ ЗАГРУЗКИ СТРАНИЦЫ
+    document.addEventListener('DOMContentLoaded', function() {
+        initStages();
+        const finishBtn = document.getElementById('finishStageBtn');
+        if (finishBtn) {
+            finishBtn.addEventListener('click', finishStage);
+        }
+    });
+
+    window.goToStage = goToStage;
+    window.openFolder = openFolder;
+    window.closeModal = closeModal;
+    window.submitAnswer = submitAnswer;
+    window.submitTextStage = submitTextStage;
+    window.submitSecondStage = submitSecondStage;
+    window.showHint = showHint;
+    window.toggleInfo = toggleInfo;
+    window.closeFinalModal = closeFinalModal;
+    window.saveResults = saveResults;
+    window.clearProgressAndRestart = clearProgressAndRestart;
+    window.finishStage = finishStage;
+</script>
+</body>
+</html>
