@@ -18,13 +18,13 @@
             background-color: #092037;
             color: white;
             padding: 10px 20px;
-            font-size: 18px;
+            font-size: clamp(16px, 1.2vw, 22px);
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         .timer {
             font-family: monospace;
-            font-size: 20px;
+            font-size: clamp(16px, 1.2vw, 22px);
         }
         .room-container {
             position: relative;
@@ -37,11 +37,11 @@
         .board-title {
             text-align: center;
             position: absolute;
-            top: 190px;
+            top: 16%;
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 12px;
+            font-size: clamp(12px, 1.5vw, 18px);
             white-space: nowrap;
             background: none;
             padding: 0;
@@ -52,16 +52,16 @@
             position: absolute;
             width: 50px;
             height: 50px;
-            background-color: rgba(255, 100, 100, 0.8);
+            /*background-color: rgba(255, 100, 100, 0.8);*/
             border-radius: 50%;
             cursor: pointer;
             transform: translate(-50%, -50%);
-            border: 2px solid white;
+           /* border: 2px solid white;*/
             transition: all 0.2s;
             z-index: 50;
         }
         .point:hover {
-            background-color: rgba(255, 50, 50, 1);
+            /*background-color: rgba(255, 50, 50, 1);*/
             transform: translate(-50%, -50%) scale(1.1);
         }
         .image-point {
@@ -74,17 +74,16 @@
         }
         .popup {
             position: absolute;
-            background: white;
-            border: 1px solid #aaa;
             padding: 10px 15px;
             border-radius: 6px;
             display: none;
             min-width: 200px;
             z-index: 200;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-size: 14px;
         }
         .popup img {
             max-width: 100%;
+            height: auto;
         }
         .modal-overlay {
             position: fixed;
@@ -152,12 +151,10 @@
         }
         .close-btn:hover { color: #ff6b6b; }
         .attempts {
-            text-align: right;
             margin-bottom: 10px;
             font-size: 14px;
             color: #555;
         }
-        /* Окно с баллами (вместо видео) */
         .score-popup {
             position: fixed;
             top: 50%;
@@ -182,9 +179,112 @@
             color: white;
             font-weight: bold;
         }
+
+        /* === ДЛЯ ОЧЕНЬ БОЛЬШИХ ЭКРАНОВ (1600px и выше) === */
+        @media (min-width: 1600px) {
+            .point {
+                width: 70px;
+                height: 70px;
+            }
+            .image-point {
+                width: 100px !important;
+                height: 100px !important;
+            }
+            .popup {
+                min-width: 280px;
+                font-size: 18px;
+                padding: 15px 20px;
+            }
+            .board-title {
+                font-size: 18px;
+                top: 15%;
+            }
+            .modal-content {
+                width: 450px;
+                margin-top: 250px;
+            }
+            .modal-content input, .modal-content button {
+                font-size: 18px;
+            }
+            .score-popup {
+                padding: 40px 70px;
+            }
+            .score-popup h2 {
+                font-size: 36px;
+            }
+            .score-popup p {
+                font-size: 24px;
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .point {
+                width: 85px;
+                height: 85px;
+            }
+            .image-point {
+                width: 120px !important;
+                height: 120px !important;
+            }
+            .popup {
+                min-width: 350px;
+                font-size: 20px;
+                padding: 18px 25px;
+            }
+            .board-title {
+                font-size: 22px;
+                top: 14%;
+            }
+            .modal-content {
+                width: 500px;
+                margin-top: 300px;
+            }
+        }
+
+        /* === ПЛАНШЕТЫ И ТЕЛЕФОНЫ === */
         @media (max-width: 768px) {
-            .point { width: 30px; height: 30px; }
-            .modal-content { width: 90%; margin-top: 100px; }
+            .point {
+                width: 30px;
+                height: 30px;
+            }
+            .modal-content {
+                width: 90%;
+                margin-top: 100px;
+                padding: 20px;
+            }
+            .popup {
+                min-width: 150px;
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+            .score-popup {
+                padding: 20px 30px;
+                width: 90%;
+            }
+            .score-popup h2 {
+                font-size: 24px;
+            }
+            .score-popup p {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .point {
+                width: 25px;
+                height: 25px;
+            }
+            .board-title {
+                font-size: 8px;
+                top: 14%;
+                white-space: normal;
+                width: 80%;
+                line-height: 1.2;
+            }
+            .popup {
+                min-width: 120px;
+                font-size: 10px;
+            }
         }
     </style>
 </head>
@@ -198,17 +298,17 @@
     <h3 class="board-title">Визуализация скрытых аспектов<br>речи помогает в диагностике</h3>
 
     <div class="point" style="top: 400px; left: 30px;" data-popup="popup1"></div>
-    <div class="point" style="top: 350px; left: 590px;" data-popup="popup2"></div>
-    <div class="point" style="top: 280px; left: 210px;" data-popup="popup3"></div>
-    <div class="point" style="top: 220px; left: 1030px;" data-popup="popup4"></div>
-    <div class="point" id="triggerForm" style="top: 300px; left: 300px; background-color: rgba(50,200,50,0.8);"></div>
+    <div class="point" style="top: 320px; left: 620px;" data-popup="popup2"></div>
+    <div class="point" style="top: 260px; left: 220px;" data-popup="popup3"></div>
+    <div class="point" style="top: 200px; left: 1060px;" data-popup="popup4"></div>
+    <div class="point" id="triggerForm" style="top: 300px; left: 300px;"></div>
     <div class="point image-point" style="top: 500px; left: 300px; width: 80px; height: 80px;" data-popup="popup6"></div>
 
     <div class="popup" id="popup1" style="top: 440px; left: 80px;">Звук можно увидеть.</div>
     <div class="popup" id="popup2" style="top: 380px; left: 640px;"><img src="monitor.png" width="250px"></div>
     <div class="popup" id="popup3" style="top: 320px; left: 260px;"><img src="SONIDO.jpg" width="250px"></div>
     <div class="popup" id="popup4" style="top: 260px; left: 1080px;"><img src="obhenie.jpg" width="250px"></div>
-    <div class="popup" id="popup6" style="top: 550px; left: 400px;"><img src="netvork2.jpg" width="350px"></div>
+    <div class="popup" id="popup6" style="top: 200px; left: 400px;"><img src="netvork2.jpg" width="350px"></div>
 </div>
 
 <div class="modal-overlay" id="modalAnswerForm">
